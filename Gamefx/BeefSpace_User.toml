@@ -1,6 +1,7 @@
 FileVersion = 1
 LastConfig = "Debug"
 LastPlatform = "Win64"
+RecentFilesList = ["src\\Tween.bf", "c:\\Program Files\\BeefLang\\BeefLibs\\corlib\\src\\Attribute.bf", "$Emit$Build$corlib:"]
 
 [MainWindow]
 X = 371
@@ -40,6 +41,23 @@ RequestedHeight = 150.0
 SizePriority = 150.0
 DefaultDocumentsTabbedView = true
 Type = "TabbedView"
+
+[[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
+TabLabel = ""
+TabWidth = 30.0
+TabIsPinned = false
+Type = "SourceViewPanel"
+FilePath = "$Emit$Build$corlib:"
+
+[[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
+Active = true
+TabLabel = "Tween.bf"
+TabWidth = 82.0
+TabIsPinned = false
+Type = "SourceViewPanel"
+FilePath = "src\\Tween.bf"
+CursorPos = 6326
+ProjectName = "Gamefx"
 
 [[MainDockingFrame.DockedWidgets]]
 RequestedWidth = 250.0

@@ -2,18 +2,34 @@
 This repo contains libraries, frameworks, and guides for starter. Unlike zig-gamedev, I only focus on hobby/indie gamedev, so this repo prefer simple, ergonomic high-level, yolo coding solutions other than high-performance, low-level graphics, ECS, DoD (which is can archieve with Beef by default).
 
 
+## Disclaimer
+- This repo focus on hobby/indie games, may not work with bigger games (gacha, moba, AAA)
+- Please this for reference only, not the source of truth (still researching)
+- For general purpose programming, see this [awesome list](https://github.com/Jonathan-Racaud/awesome-beef)
+
+
 ## Programming language guides
 - If you have experience with C++ and C#, Beef is not hard from the beginning.
 - Just read through all the [docs](https://www.beeflang.org/docs/foreward/) (which is short), you will have based knowledge of syntax and semantic.
 - Have some practices and experimentals, like [I did](https://github.com/maihd/FunWithBeef). Now you can coding fluently with Beef. That's well enough to start developing game.
 
 
+## Beef advantages for gamedev
+- Check out the [design goals](https://www.beeflang.org/docs/foreward/) of Beef
+- Full syntax of C# with C++ semantic (two familiar/main-stream programming languages for gamedev)
+- Syntaxes for ergonomic gameplay coding: tagged union, pattern matching, comptime, comptime codegen
+- Fast code compile, hot code reloading, immediate change when changing gameplay code (fast iteration development)
+- C/C++ interop, easy bindings existing game libraries
+
+
 ## Libraries
+Only contains libraries which are should used:
 - Raylib Beef bindings ([origin version](https://github.com/M0n7y5/raylib-beef), [MaiHD fork](https://github.com/maihd/raylib-beef))
-- Linq (for functional programming)
+- [Linq](https://github.com/disarray2077/Beef.Linq) (for functional programming)
 
 
 ## Frameworks
+Create new framework or using existing:
 - Use modules from this repo
 - Roll your own based on existing framework/engine: MonoGame (Stardew Valley, Bastion, Celeste), [deepnightLibs](https://github.com/deepnight/deepnightLibs) (use in Dead Cells), SexyAppFramework (Popcap Games), Cocos2d-x (Many many mobile games), ...
 - Underhood rendering, audio, IO: 

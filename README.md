@@ -34,15 +34,16 @@ Only contains libraries which are should used:
 
 ## Frameworks
 Create new framework or using existing:
-- Use modules from this repo
+- Use modules from this repo (which I called Gamefx)
 - Roll your own based on existing framework/engine: MonoGame (Stardew Valley, Bastion, Celeste), [deepnightLibs](https://github.com/deepnight/deepnightLibs) (use in Dead Cells), SexyAppFramework (Popcap Games), Cocos2d-x (Many many mobile games), ...
 - Underhood rendering, audio, IO: 
     - Just use Raylib from beginning
     - Use extension features of Beef to wrap code, in the long-term, you can change your system without change gameplay code
+- Modules:
+    - Tweening (use comptime reflection to avoid runtime overhead)
 - Wishlist modules:
     - Timer/Scheduler
     - Input bindings
-    - Tweening
     - Physics and simulations
     - LDtk parser
     - Resources caching

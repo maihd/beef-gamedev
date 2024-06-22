@@ -21,6 +21,7 @@ This repo contains libraries, frameworks, and guides for starter. Unlike zig-gam
 - Fast code compile, hot code reloading, immediate change when changing gameplay code (fast iteration development)
 - C/C++ interop, easy bindings existing game libraries
 - Realtime memory leaks detection, optional safety check on expressions, distinct build
+- IDE support for generation file with Beef (like Unity support custom editor with C#)
 
 
 ## Libraries
@@ -28,6 +29,7 @@ Only contains libraries which are should used:
 - Raylib Beef bindings ([origin version](https://github.com/M0n7y5/raylib-beef), [MaiHD fork](https://github.com/maihd/raylib-beef))
 - [Linq](https://github.com/disarray2077/Beef.Linq) (for functional programming)
 - [Dear ImGui](https://github.com/RogueMacro/imgui-beef)
+- [Json](https://github.com/EinScott/json)
 
 
 ## Frameworks
@@ -42,7 +44,12 @@ Create new framework or using existing:
     - Input bindings
     - Tweening
     - Physics and simulations
-    
+    - LDtk parser
+    - Resources caching
+    - Package reader
+- Existing framework:
+    - [Pile](https://github.com/EinScott/Pile)
+
 
 ## Games made by Beef
 - [NeonShooter](https://github.com/maihd/neonshooter/tree/raylib-beef)

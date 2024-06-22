@@ -1,0 +1,28 @@
+# Game development with Beef
+This repo contains libraries, frameworks, and guides for starter. Unlike zig-gamedev, I only focus on hobby/indie gamedev, so this repo prefer simple, ergonomic high-level, yolo coding solutions other than high-performance, low-level graphics, ECS, DoD (which is can archieve with Beef by default).
+
+
+## Programming language guides
+- If you have experience with C++ and C#, Beef is not hard from the beginning.
+- Just read through all the [docs](https://www.beeflang.org/docs/foreward/) (which is short), you will have based knowledge of syntax and semantic.
+- Have some practices and experimentals, like [I did](https://github.com/maihd/FunWithBeef). Now you can coding fluently with Beef. That's well enough to start developing game.
+
+
+## Libraries
+- Raylib Beef bindings ([origin version](https://github.com/M0n7y5/raylib-beef), [MaiHD fork](https://github.com/maihd/raylib-beef))
+- Linq (for functional programming)
+
+
+## Frameworks
+- Use modules from this repo
+- Roll your own based on existing framework/engine: MonoGame (Stardew Valley, Bastion, Celeste), [deepnightLibs](https://github.com/deepnight/deepnightLibs) (use in Dead Cells), SexyAppFramework (Popcap Games), Cocos2d-x (Many many mobile games), ...
+- Underhood rendering, audio, IO: 
+    - Just use Raylib from beginning
+    - Use extension features of Beef to wrap code, in the long-term, you can change your system without change gameplay code
+
+
+## Cross-platform
+- Beef work well with Windows (main-stream PC platform, also a starter platform for indie gamedev)
+- Can build for mobile, but no production show case
+- Wasm for Web platform, which also a priority target platform of Beef
+- I have no experience for on gaming console, but [Evening Star's Penny's Big Breakaway](https://www.youtube.com/watch?v=1hAgpRYM2M8&pp=ygUVcGVubnkncyBiaWcgYnJlYWthd2F5) proof it [worked](https://steamcommunity.com/app/1955230/discussions/0/4346606879517102842)

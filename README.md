@@ -29,6 +29,7 @@ Only contains libraries which are should used:
 - [Linq](https://github.com/disarray2077/Beef.Linq) (for functional programming)
 - [Dear ImGui](https://github.com/RogueMacro/imgui-beef)
 
+
 ## Frameworks
 Create new framework or using existing:
 - Use modules from this repo
@@ -36,6 +37,14 @@ Create new framework or using existing:
 - Underhood rendering, audio, IO: 
     - Just use Raylib from beginning
     - Use extension features of Beef to wrap code, in the long-term, you can change your system without change gameplay code
+- Wishlist modules:
+    - Timer/Scheduler
+    - Input bindings
+    - Tweening
+
+
+## Games made by Beef
+- [NeonShooter](https://github.com/maihd/neonshooter/tree/raylib-beef)
 
 
 ## Cross-platform

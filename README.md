@@ -20,13 +20,14 @@ This repo contains libraries, frameworks, and guides for starter. Unlike zig-gam
 - Syntaxes for ergonomic gameplay coding: tagged union, pattern matching, comptime, comptime codegen
 - Fast code compile, hot code reloading, immediate change when changing gameplay code (fast iteration development)
 - C/C++ interop, easy bindings existing game libraries
+- Realtime memory leaks detection, optional safety check on expressions, distinct build
 
 
 ## Libraries
 Only contains libraries which are should used:
 - Raylib Beef bindings ([origin version](https://github.com/M0n7y5/raylib-beef), [MaiHD fork](https://github.com/maihd/raylib-beef))
 - [Linq](https://github.com/disarray2077/Beef.Linq) (for functional programming)
-
+- [Dear ImGui](https://github.com/RogueMacro/imgui-beef)
 
 ## Frameworks
 Create new framework or using existing:

@@ -53,6 +53,8 @@ Create new framework or using existing:
 
 
 ## Games made by Beef
+- [Evening Star's Penny's Big Breakaway](https://www.youtube.com/watch?v=1hAgpRYM2M8&pp=ygUVcGVubnkncyBiaWcgYnJlYWthd2F5)
+- [Motion Melody](https://store.steampowered.com/app/2175480/Motionmelody/)
 - [NeonShooter](https://github.com/maihd/neonshooter/tree/raylib-beef)
 
 

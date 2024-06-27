@@ -50,7 +50,8 @@ Create new framework or using existing:
     - Package reader
 - Existing framework:
     - [Pile](https://github.com/EinScott/Pile)
-
+    - [Strawberry (unmaintained)](https://github.com/MaddyThorson/StrawberryBF)
+    - [Raylib Beef generator (nearly with C version, no extensions)](https://github.com/Starpelly/raylib-beef)
 
 ## Games made by Beef
 - [Evening Star's Penny's Big Breakaway](https://www.youtube.com/watch?v=1hAgpRYM2M8&pp=ygUVcGVubnkncyBiaWcgYnJlYWthd2F5)

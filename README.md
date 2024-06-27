@@ -53,6 +53,13 @@ Create new framework or using existing:
     - [Strawberry (unmaintained)](https://github.com/MaddyThorson/StrawberryBF)
     - [Raylib Beef generator (nearly with C version, no extensions)](https://github.com/Starpelly/raylib-beef)
 
+## Tools
+- Beef IDE
+- [LDtk](https://ldtk.io/)
+- [Pixi](https://foxnne.github.io/pixi/) free pixel art editor like [Asesprite](https://www.aseprite.org/)
+- [Raylib tooling set](https://raylibtech.itch.io/)
+
+
 ## Games made by Beef
 - [Evening Star's Penny's Big Breakaway](https://www.youtube.com/watch?v=1hAgpRYM2M8&pp=ygUVcGVubnkncyBiaWcgYnJlYWthd2F5)
 - [Motion Melody](https://store.steampowered.com/app/2175480/Motionmelody/)
@@ -64,3 +71,7 @@ Create new framework or using existing:
 - Can build for mobile, but no production show case
 - Wasm for Web platform, which also a priority target platform of Beef
 - I have no experience for on gaming console, but [Evening Star's Penny's Big Breakaway](https://www.youtube.com/watch?v=1hAgpRYM2M8&pp=ygUVcGVubnkncyBiaWcgYnJlYWthd2F5) proof it [worked](https://steamcommunity.com/app/1955230/discussions/0/4346606879517102842)
+
+
+## Source code license
+MIT License. Copyright (c) 2024 MaiHD. Detais in [LICENSE](/LICENSE).

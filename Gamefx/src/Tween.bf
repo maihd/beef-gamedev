@@ -27,18 +27,15 @@ using System.Reflection;
 
 static
 {
+	[AlwaysInclude]
 	public struct Tweener<T, V, TEaseFunc> : this(T target, V startValue, V endValue, float duration, TEaseFunc easeFunc)
 		where TEaseFunc : delegate float(float s, float e, float t)
 	{
-		private function void TweenRoutine(T target, V startValue, V endValue, float time, TEaseFunc easeFunc);
-
 		private bool 	done 		= false;
 		private float 	totalTime	= 0.0f;
 
 		public void Update(float dt) mut
 		{
-			GenTweenRoutine();
-
 			if (done)
 			{
 				return;
@@ -47,7 +44,7 @@ static
 			totalTime += dt;
 			totalTime = Math.Min(totalTime, duration);
 
-			routine(target, startValue, endValue, totalTime / duration, easeFunc);
+			Routine(target, startValue, endValue, totalTime / duration, easeFunc);
 
 			if (totalTime >= duration)
 			{
@@ -55,7 +52,7 @@ static
 			}
 		}
 
-		[Comptime]
+		[Comptime, OnCompile(.TypeInit)]
 		private static void GenTweenRoutine()
 		{
 			var typeV = typeof(V);
@@ -66,7 +63,7 @@ static
 	
 			// Generation tween function
 			let code = scope String();
-			code.Append("readonly TweenRoutine routine = (target, startValue, endValue, time, easeFunc) =>\n");
+			code.Append("private void Routine(T target, V startValue, V endValue, float time, TEaseFunc easeFunc)\n");
 			code.Append("{\n");
 	
 			for (let fieldV in typeV.GetFields())
@@ -76,10 +73,10 @@ static
 			}
 	
 			code.Append("};");
-			Compiler.MixinRoot(code);
+			Compiler.EmitTypeBody(typeof(Self), code);
 		}
 
-		[Comptime]
+		[Comptime] // OnCompile(.TypeDone) if needed type checking
 		private static void CheckTypes()
 		{
 			var typeT = typeof(T);
@@ -224,6 +221,7 @@ static
 		Compiler.MixinRoot(code);
 	}
 
+	[AlwaysInclude]
 	public static Tweener<T, V, TEaseFunc> Tween<T, V, TEaseFunc>(T target, V startValue, V endValue, float duration, TEaseFunc easeFunc, Action onDone = null)
 	    where TEaseFunc : delegate float(float s, float e, float t)
 	{
@@ -233,14 +231,16 @@ static
 		// With syntax like new:SchedulerArena
 		return .(target, startValue, endValue, duration, easeFunc);
 	}
-
+	
+	[AlwaysInclude]
 	public static Tweener<T, V, TEaseFunc> TweenTo<T, V, TEaseFunc>(T target, V endValue, float duration, TEaseFunc easeFunc, Action onDone = null)
 	    where TEaseFunc : delegate float(float s, float e, float t)
 	{
 		GenStartValueDecl<T, V>();
 		return .(target, startValue, endValue, duration, easeFunc);
 	}
-
+	
+	[AlwaysInclude]
 	public static Tweener<T, V, TEaseFunc> TweenBy<T, V, TEaseFunc>(T target, V value, float duration, TEaseFunc easeFunc, Action onDone = null)
 	    where TEaseFunc : delegate float(float s, float e, float t)
 	{
@@ -250,50 +250,5 @@ static
 		return .(target, startValue, endValue, duration, easeFunc);
 	}
 
-#endregion
-
-#region Unit tests
-	struct Vector2
-	{
-	    public float x;
-	    public float y;
-	}
-
-	class Entity
-	{
-	    using public Vector2 position;
-	}
-
-	private static float DefEaseFunc(float s, float e, float t)
-	{
-		return (s * (1.0f - t)) + (e * t);
-	}
-
-	[Test]
-	private static void TestTween()
-	{
-		Entity entity = new Entity() { x = 0.0f, y = 0.0f };
-		defer delete entity;
-
-		var tweenerX = TweenTo(entity, (x: 10.0f), 1.0f, => DefEaseFunc);
-
-		tweenerX.Update(1.0f);
-		Test.Assert(entity.x == 10.0f);
-
-		var tweenerY = TweenTo(entity, (y: 20.0f), 1.0f, => DefEaseFunc);
-
-		tweenerY.Update(0.5f);
-		Test.Assert(entity.y == 10.0f);
-
-		var tweenerPos = TweenTo(&entity.position, Vector2 { x = 0.0f, y = 0.0f }, 1.0f, => DefEaseFunc);
-
-		tweenerPos.Update(0.5f);
-		Test.Assert(entity.x == 5.0f && entity.y == 5.0f);
-
-		var tweener = TweenTo(entity, Vector2 { x = 0.0f, y = 0.0f }, 1.0f, => DefEaseFunc);
-
-		tweener.Update(0.5f);
-		Test.Assert(entity.x == 2.5f && entity.y == 2.5f);
-	}
 #endregion
 }

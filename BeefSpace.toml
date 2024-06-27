@@ -1,0 +1,5 @@
+FileVersion = 1
+Projects = {Gamefx = {Path = "Gamefx"}, GamefxUnitTests = {Path = "GamefxUnitTests"}}
+
+[Workspace]
+StartupProject = "GamefxUnitTests"

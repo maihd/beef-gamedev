@@ -41,13 +41,14 @@ Create new framework or using existing:
     - Use extension features of Beef to wrap code, in the long-term, you can change your system without change gameplay code
 - Modules:
     - Tweening (use comptime reflection to avoid runtime overhead)
-- Wishlist modules:
     - Timer/Scheduler
-    - Input bindings
-    - Physics and simulations
-    - LDtk parser
-    - Resources caching
-    - Package reader
+- Wishlist modules:
+    - Simple and fast allocator (Arena central memory allocations)
+    - Input bindings: no game handle inputs directly from mouse/keyboard or gamepad
+    - Physics and simulations (high-level wrapper for existing physics engine)
+    - LDtk parser (and high-level usage like entity generation)
+    - Resources caching, assets flow in game runtime (ie: load and cache texture, sound)
+    - Package reader: famous .pak format, raylib's rres
 - Existing framework:
     - [Pile](https://github.com/EinScott/Pile)
     - [Strawberry (unmaintained)](https://github.com/MaddyThorson/StrawberryBF)
@@ -58,6 +59,7 @@ Create new framework or using existing:
 - [LDtk](https://ldtk.io/)
 - [Pixi](https://foxnne.github.io/pixi/) free pixel art editor like [Asesprite](https://www.aseprite.org/)
 - [Raylib tooling set](https://raylibtech.itch.io/)
+- [Raylib's rres](https://github.com/raysan5/rres)
 
 
 ## Games made by Beef

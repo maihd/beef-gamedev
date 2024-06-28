@@ -27,6 +27,8 @@ public struct Tweener<T, V, TEaseFunc> : this(T target, V startValue, V endValue
 	private bool 	done 		= false;
 	private float 	totalTime	= 0.0f;
 
+    public bool IsCompleted => done;
+
 	public void Update(float dt) mut
 	{
 		if (done)
@@ -186,7 +188,7 @@ public struct Tweener<T, V, TEaseFunc> : this(T target, V startValue, V endValue
 static
 {
 	[Comptime]
-	private static void GenStartValueDecl<T, V>()
+	public static void GenStartValueDecl<T, V>()
 	{
 		var typeV = typeof(V);
 		if (typeV.IsPointer)
@@ -208,7 +210,7 @@ static
 	}
 
 	[Comptime]
-	private static void GenEndValueDecl<T, V>()
+	public static void GenEndValueDecl<T, V>()
 	{
 		var typeV = typeof(V);
 		if (typeV.IsPointer)

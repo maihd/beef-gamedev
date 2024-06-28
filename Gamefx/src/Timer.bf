@@ -5,6 +5,10 @@ LICENSE
 
     See end of file for license information.
 
+NOTES
+
+    This library use global allocations.
+
 RECENT REVISION HISTORY:
 
     0.1 (2024-06-28) designing the API
@@ -24,7 +28,7 @@ public interface ITimerRoutine
 {
     public bool IsCompleted { get; }
     public void Dispose();
-    public void Update(float dt);
+    public void Update(float dt) mut;
 }
 
 [AlwaysInclude]

@@ -18,7 +18,7 @@ static
 	}
 
     [AlwaysInclude]
-	private static float DefEaseFunc(float s, float e, float t)
+	internal static float DefEaseFunc(float s, float e, float t)
 	{
 		return (s * (1.0f - t)) + (e * t);
 	}

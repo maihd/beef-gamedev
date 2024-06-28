@@ -43,13 +43,13 @@ Create new framework or using existing:
     - Tweening (use comptime reflection to avoid runtime overhead)
     - Timer/Scheduler
 - Wishlist modules:
+    - Full framework (include all modules, deps)
+    - Input bindings: no game handle inputs directly from mouse/keyboard or gamepad (framework dependent)
     - Simple and fast allocator (Arena central memory allocations)
     - Physics and simulations (high-level wrapper for existing physics engine)
     - LDtk parser (and high-level usage like entity generation)
     - Resources caching, assets flow in game runtime (ie: load and cache texture, sound)
     - Package reader: famous .pak format, raylib's rres
-- Low priority wishlist modules:
-    - Input bindings: no game handle inputs directly from mouse/keyboard or gamepad (framework dependent)
 - Existing framework:
     - [Pile](https://github.com/EinScott/Pile)
     - [Strawberry (unmaintained)](https://github.com/MaddyThorson/StrawberryBF)

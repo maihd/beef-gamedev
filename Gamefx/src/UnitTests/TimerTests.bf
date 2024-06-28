@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 static
 {
-    [Test, AlwaysInclude]
+    [Test]
     static void TimerTests()
     {
         let stream = scope Test.TestStream();

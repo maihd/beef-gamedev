@@ -1,4 +1,4 @@
-namespace Gamefx.UnitTests;
+namespace Gamefx;
 
 using System;
 

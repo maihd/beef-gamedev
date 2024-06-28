@@ -1,0 +1,3 @@
+[submodule "libs/raylib-beef"]
+	path = libs/raylib-beef
+	url = https://github.com/maihd/raylib-beef

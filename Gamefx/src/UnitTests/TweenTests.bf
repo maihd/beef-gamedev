@@ -4,26 +4,23 @@ using System;
 
 static
 {
-    [AlwaysInclude]
 	struct Vector2
 	{
 	    public float x;
 	    public float y;
 	}
 
-    [AlwaysInclude]
 	class Entity
 	{
 	    using public Vector2 position;
 	}
 
-    [AlwaysInclude]
 	internal static float DefEaseFunc(float s, float e, float t)
 	{
 		return (s * (1.0f - t)) + (e * t);
 	}
 
-	[Test, AlwaysInclude]
+	[Test]
 	static void TestTween()
 	{
 		Entity entity = new Entity() { x = 0.0f, y = 0.0f };

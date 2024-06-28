@@ -1,18 +1,23 @@
+namespace Gamefx;
+
 using System;
 
 static
 {
+    [AlwaysInclude]
 	struct Vector2
 	{
 	    public float x;
 	    public float y;
 	}
 
+    [AlwaysInclude]
 	class Entity
 	{
 	    using public Vector2 position;
 	}
 
+    [AlwaysInclude]
 	private static float DefEaseFunc(float s, float e, float t)
 	{
 		return (s * (1.0f - t)) + (e * t);

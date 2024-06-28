@@ -1,8 +1,5 @@
 FileVersion = 1
-Projects = {Gamefx = {Path = "Gamefx"}, GamefxUnitTests = {Path = "GamefxUnitTests"}}
+Projects = {Gamefx = {Path = "Gamefx"}}
 
-[Workspace]
-StartupProject = "GamefxUnitTests"
-
-[Configs.Test.Win64]
-ConfigSelections = {GamefxUnitTests = {Config = "Test"}}
+[Configs.Test.Win32]
+ConfigSelections = {Gamefx = {Config = "Debug"}}

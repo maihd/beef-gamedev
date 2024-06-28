@@ -1,16 +1,17 @@
 /*
 Beef GameFX Timer - v0.1 - https://github.com/maihd/beef-gamedev
 
-LICENSE
-
-    See end of file for license information.
-
 NOTES
 
     This library use global allocations.
 
+LICENSE
+
+    See end of file for license information.
+
 RECENT REVISION HISTORY:
 
+    0.2 (2024-06-28) make sure memory lifecycle is right
     0.1 (2024-06-28) designing the API
 
 ============================    Contributors    =========================
@@ -31,12 +32,30 @@ public interface ITimerRoutine
     public void Update(float dt) mut;
 }
 
+public enum TimerFlags : uint32
+{
+    None      = 0,
+    OwnMemory = 1,
+}
+
 [AlwaysInclude]
 public class Timer
 {
-    private append List<ITimerRoutine> routines = .() ~ ClearAndDeleteItems!(_);
-    private append List<ITimerRoutine> addingRoutines = .() ~ ClearAndDeleteItems!(_);
-    private append List<ITimerRoutine> removingRoutines = .() ~ ClearAndDeleteItems!(_);
+    private TimerFlags flags = .None;
+
+    private append List<ITimerRoutine> routines = .();
+    private append List<ITimerRoutine> addingRoutines = .();
+    private append List<ITimerRoutine> removingRoutines = .();
+
+    public this(TimerFlags flags = .None)
+    {
+        this.flags = flags;
+    }
+
+    public ~this()
+    {
+        Clear();
+    }
 
     public void Update(float dt)
     {
@@ -62,7 +81,11 @@ public class Timer
         }
 
         addingRoutines.Clear();
-        ClearAndDeleteItems!(removingRoutines);
+
+        if (flags.HasFlag(.OwnMemory))
+        {
+            ClearAndDeleteItems!(removingRoutines);
+        }
     }
 
     public void AddRoutine(ITimerRoutine routine)
@@ -85,21 +108,25 @@ public class Timer
     public void After<TAction>(float delay, TAction action) where TAction : Action
     {
         Debug.Assert(action != null);
-        addingRoutines.Add(new RoutineAfter<TAction>(delay, action));
+        addingRoutines.Add(new:this RoutineAfter<TAction>(this, delay, action));
     }
     
     [Inline]
-    public void Every<TAction>(float delay, TAction action, int count = 0, TAction after = null) where TAction : Action
+    public void Every<TActionFn, TAfterFn>(float delay, TActionFn action, int count, TAfterFn after = null)
+		where TActionFn : Action
+		where TAfterFn : Action
     {
         Debug.Assert(action != null);
-        addingRoutines.Add(new RoutineEvery<TAction>(delay, action, count, after));
+        addingRoutines.Add(new:this RoutineEvery<TActionFn, TAfterFn>(this, delay, action, count, after));
     }
 
     [Inline]
-    public void During<TAction>(float delay, TAction action, TAction after = null) where TAction : Action
+    public void During<TActionFn, TAfterFn>(float delay, TActionFn action, TAfterFn after = null)
+		where TActionFn : Action
+		where TAfterFn : Action
     {
         Debug.Assert(action != null);
-        addingRoutines.Add(new RoutineDuring<TAction>(delay, action, after));
+        addingRoutines.Add(new:this RoutineDuring<TActionFn, TAfterFn>(this, delay, action, after));
     }
 
     // @todo(maihd): Add remove by tag
@@ -110,32 +137,68 @@ public class Timer
 
     public void Clear()
     {
-        for (let routine in routines)
-        {
-            routine.Dispose();
-        }
-
-        for (let routine in addingRoutines)
-        {
-            routine.Dispose();
-        }
-
-        for (let routine in removingRoutines)
-        {
-            routine.Dispose();
-        }
-
         ClearAndDeleteItems!(routines);
         ClearAndDeleteItems!(addingRoutines);
         ClearAndDeleteItems!(removingRoutines);
     }
 
+#region memory allocations
+    public void* Alloc(int size, int align)
+    {
+        return Internal.StdMalloc(size);
+    }
+
+    public void* AllocTyped(Type type, int size, int align)
+    {
+        void* data = Alloc(size, align);
+        if (type.HasDestructor)
+            MarkRequiresDeletion(data);
+        return data;
+    }
+
+    public void Free(void* ptr)
+    {
+        Internal.StdFree(ptr);
+    }
+
+    public void MarkRequiresDeletion(void* obj)
+    {
+        /* TODO: call this object's destructor when the allocator is disposed */
+    }
+#endregion
+
 #region Routines
+    [Comptime]
+    private static void ComptimeFuncDelete(Type type, StringView name)
+    {
+        /*This code will crash the IDE or compiler when build
+        Runtime.FatalError(scope $"type full name: {typeof(T).GetFullName(..scope .())}");
+        const let isDelegate = typeof(T).[Friend]mTypeFlags.HasFlag(.Delegate);
+        if (isDelegate)
+        {
+            Compiler.MixinRoot(scope $"delete:timer {name};");
+        }
+        */
+
+        if (type.[Friend]mTypeFlags.HasFlag(.Delegate))
+        {
+            Compiler.MixinRoot(scope $"delete:timer {name};");
+        }
+    }
+
     [AlwaysInclude]
-    public class RoutineAfter<TAction> : ITimerRoutine, this(float delay, TAction action)
+    public class RoutineAfter<TAction> : ITimerRoutine, this(Timer timer, float delay, TAction action)
         where TAction : Action
     {
         private float time = 0.0f;
+
+        ~this()
+        {
+            if (timer.flags.HasFlag(.OwnMemory))
+            {
+                ComptimeFuncDelete(typeof(TAction), nameof(action));
+            }
+        }
 
         public bool IsCompleted
         {
@@ -157,11 +220,21 @@ public class Timer
     }
 
     [AlwaysInclude]
-    public class RoutineEvery<TAction> : ITimerRoutine, this(float delay, TAction action, int count, TAction after)
-        where TAction : Action
+    public class RoutineEvery<TActionFn, TAfterFn> : ITimerRoutine, this(Timer timer, float delay, TActionFn action, int count, TAfterFn after)
+        where TActionFn : Action
+        where TAfterFn : Action
     {
         private float time = 0.0f;
         private int counter = 0;
+
+        public ~this()
+        {
+            if (timer.flags.HasFlag(.OwnMemory))
+            {
+                ComptimeFuncDelete(typeof(TActionFn), nameof(action));
+                ComptimeFuncDelete(typeof(TAfterFn), nameof(after));
+            }
+        }
 
         public bool IsCompleted
         {
@@ -193,10 +266,20 @@ public class Timer
     }
 
     [AlwaysInclude]
-    public class RoutineDuring<TAction> : ITimerRoutine, this(float delay, TAction action, TAction after)
-        where TAction : Action
+    public class RoutineDuring<TActionFn, TAfterFn> : ITimerRoutine, this(Timer timer, float delay, TActionFn action, TAfterFn after)
+        where TActionFn : Action
+        where TAfterFn : Action
     {
         private float time = 0.0f;
+
+        public ~this()
+        {
+            if (timer.flags.HasFlag(.OwnMemory))
+            {
+                ComptimeFuncDelete(typeof(TActionFn), nameof(action));
+                ComptimeFuncDelete(typeof(TAfterFn), nameof(after));
+            }
+        }
 
         public bool IsCompleted
         {

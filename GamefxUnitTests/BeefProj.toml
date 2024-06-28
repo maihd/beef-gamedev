@@ -1,7 +1,0 @@
-FileVersion = 1
-Dependencies = {corlib = "*", Gamefx = "*"}
-
-[Project]
-Name = "GamefxUnitTests"
-StartupObject = "Gamefx.UnitTests.Program"
-DefaultNamespace = "Gamefx.UnitTests"

@@ -16,6 +16,7 @@ LICENSE
 
 RECENT REVISION HISTORY:
 
+    0.2 (2024-06-28) make sure memory lifecycle is right
     0.1 (2024-06-28) designing the API
 
 ============================    Contributors    =========================
@@ -33,41 +34,58 @@ using System.Diagnostics;
 public extension Timer
 {
     [AlwaysInclude]
-    public void Tween<T, V, TEaseFunc>(T target, V startValue, V endValue, float duration, TEaseFunc easeFunc, Action onDone = null)
+    public void Tween<T, V, TEaseFunc, TAction>(T target, V startValue, V endValue, float duration, TEaseFunc easeFunc, TAction after = null)
         where TEaseFunc : delegate float(float s, float e, float t)
+        where TAction: Action
     {
-    	addingRoutines.Add(new TweenerRoutine<T, V, TEaseFunc>(target, startValue, endValue, duration, easeFunc));
+    	addingRoutines.Add(new:this TweenerRoutine<T, V, TEaseFunc, TAction>(this, target, startValue, endValue, duration, easeFunc, after));
     }
 
     [AlwaysInclude]
-    public void TweenTo<T, V, TEaseFunc>(T target, V endValue, float duration, TEaseFunc easeFunc, Action onDone = null)
+    public void TweenTo<T, V, TEaseFunc, TAction>(T target, V endValue, float duration, TEaseFunc easeFunc, TAction after = null)
         where TEaseFunc : delegate float(float s, float e, float t)
+        where TAction: Action
     {
     	GenStartValueDecl<T, V>();
-    	addingRoutines.Add(new TweenerRoutine<T, V, TEaseFunc>(target, startValue, endValue, duration, easeFunc));
+    	addingRoutines.Add(new:this TweenerRoutine<T, V, TEaseFunc, TAction>(this, target, startValue, endValue, duration, easeFunc, after));
     }
 
     [AlwaysInclude]
-    public void TweenBy<T, V, TEaseFunc>(T target, V value, float duration, TEaseFunc easeFunc, Action onDone = null)
+    public void TweenBy<T, V, TEaseFunc, TAction>(T target, V value, float duration, TEaseFunc easeFunc, TAction after = null)
         where TEaseFunc : delegate float(float s, float e, float t)
+        where TAction: Action
     {
     	GenStartValueDecl<T, V>();
     	GenEndValueDecl<T, V>();
 
-    	addingRoutines.Add(new TweenerRoutine<T, V, TEaseFunc>(target, startValue, endValue, duration, easeFunc));
+    	addingRoutines.Add(new:this TweenerRoutine<T, V, TEaseFunc, TAction>(this, target, startValue, endValue, duration, easeFunc, after));
     }
 
     [AlwaysInclude]
-    public class TweenerRoutine<T, V, TEaseFunc> : ITimerRoutine
+    public class TweenerRoutine<T, V, TEaseFunc, TAction> : ITimerRoutine
         where TEaseFunc: delegate float(float s, float e, float t)
+        where TAction: Action
     {
+        public Timer timer;
         public Tweener<T, V, TEaseFunc> tweener;
-    
+        public TAction after;
+
+        ~this()
+        {
+            if (timer.flags.HasFlag(.OwnMemory))
+            {
+                ComptimeFuncDelete(typeof(TEaseFunc), "tweener.easeFunc");
+                ComptimeFuncDelete(typeof(TAction), nameof(after));
+            }
+        }
+
         public bool IsCompleted => tweener.IsCompleted;
     
-        public this(T target, V startValue, V endValue, float duration, TEaseFunc easeFunc)
+        public this(Timer timer, T target, V startValue, V endValue, float duration, TEaseFunc easeFunc, TAction after)
         {
-            tweener = .(target, startValue, endValue, duration, easeFunc);
+            this.timer = timer;
+            this.tweener = .(target, startValue, endValue, duration, easeFunc);
+            this.after = after;
         }
     
         public void Dispose()

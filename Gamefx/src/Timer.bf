@@ -15,7 +15,7 @@ RECENT REVISION HISTORY:
     0.1 (2024-06-28) designing the API
 
 ============================    Contributors    =========================
-Basic tweening functional
+Basic functional
     MaiHD
 
 -- Contributing are welcome --

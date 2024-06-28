@@ -1,5 +1,5 @@
 /*
-Beef GameFX Input - v0.1 - https://github.com/maihd/beef-gamedev
+Beef GameFX LDtk parser - v0.1 - https://github.com/maihd/beef-gamedev
 
 NOTES
 
@@ -20,38 +20,11 @@ Basic functional
 -- Contributing are welcome --
 */
 
+
 using System;
 
-class Input
+public class LDtk
 {
-#if RAYLIB	
-
-#endif
-
-#region memory allocations
-	public void* Alloc(int size, int align)
-	{
-	    return Internal.StdMalloc(size);
-	}
-
-	public void* AllocTyped(Type type, int size, int align)
-	{
-	    void* data = Alloc(size, align);
-	    if (type.HasDestructor)
-	        MarkRequiresDeletion(data);
-	    return data;
-	}
-
-	public void Free(void* ptr)
-	{
-	    Internal.StdFree(ptr);
-	}
-
-	public void MarkRequiresDeletion(void* obj)
-	{
-	    /* TODO: call this object's destructor when the allocator is disposed */
-	}
-#endregion
 }
 
 /*

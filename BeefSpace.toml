@@ -3,3 +3,6 @@ Projects = {Gamefx = {Path = "Gamefx"}, GamefxUnitTests = {Path = "GamefxUnitTes
 
 [Workspace]
 StartupProject = "GamefxUnitTests"
+
+[Configs.Test.Win64]
+ConfigSelections = {GamefxUnitTests = {Config = "Test"}}

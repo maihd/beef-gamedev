@@ -76,6 +76,19 @@ static
 			Compiler.EmitTypeBody(typeof(Self), code);
 		}
 
+        [Comptime, OnCompile(.TypeDone)]
+        private static void CheckTargetType()
+        {
+            let typeT = typeof(T);
+			let nameT = typeT.GetFullName(..scope String());
+
+			// Make sure T is reference type
+			if (typeT.IsValueType)
+			{
+				Runtime.FatalError(scope $"{nameT} must be a reference type");
+			}
+        }
+        
 		[Comptime] // OnCompile(.TypeDone) if needed type checking
 		private static void CheckTypes()
 		{

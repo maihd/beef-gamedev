@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 
 static
 {
@@ -19,8 +18,8 @@ static
 		return (s * (1.0f - t)) + (e * t);
 	}
 
-	[Test]
-	private static void TestTween()
+	[Test, AlwaysInclude]
+	static void TestTween()
 	{
 		Entity entity = new Entity() { x = 0.0f, y = 0.0f };
 		defer delete entity;
@@ -30,7 +29,7 @@ static
 		tweenerX.Update(1.0f);
 		Test.Assert(entity.x == 10.0f);
 
-		var tweenerY = TweenTo(entity, (y: 20.0f), 1.0f, => DefEaseFunc);
+		var tweenerY = TweenTo(entity, (y: 20.0f), 1.0f, => DefEaseFunc); 
 
 		tweenerY.Update(0.5f);
 		Test.Assert(entity.y == 10.0f);

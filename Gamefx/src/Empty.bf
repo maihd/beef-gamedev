@@ -1,6 +1,6 @@
 using System;
 
-class Empty
+static
 {
 	[Test]
 	static void EmptyTest()

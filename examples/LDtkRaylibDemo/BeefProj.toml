@@ -1,0 +1,6 @@
+FileVersion = 1
+Dependencies = {corlib = "*", Gamefx = "*"}
+
+[Project]
+Name = "LDtkRaylibDemo"
+StartupObject = "LDtkRaylibDemo.Program"

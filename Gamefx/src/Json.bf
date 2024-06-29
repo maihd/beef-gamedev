@@ -26,10 +26,6 @@ using System.Text;
 using System.Collections;
 using System.Diagnostics;
 
-namespace Json;
-
-using internal Json;
-
 typealias JsonResult = Result<void, JsonError>;
 typealias JsonObjectData = Dictionary<StringView, JsonElement>;
 typealias JsonArrayData = List<JsonElement>;
@@ -115,7 +111,7 @@ enum JsonElement
 
 class JsonTree
 {
-	internal bool hasContent;
+	public bool hasContent;
 	append BumpAllocator alloc = .();
 	public JsonElement root;
 

@@ -1,8 +1,9 @@
 FileVersion = 1
-Projects = {Gamefx = {Path = "Gamefx"}, Raylib = {Path = "libs/raylib-beef"}, BytePath = {Path = "examples/BytePath"}}
+Projects = {Gamefx = {Path = "Gamefx"}, Raylib = {Path = "libs/raylib-beef"}, BytePath = {Path = "examples/BytePath"}, LDtkRaylibDemo = {Path = "examples/LDtkRaylibDemo"}}
+WorkspaceFolders = {Examples = ["BytePath", "LDtkRaylibDemo"]}
 
 [Workspace]
-StartupProject = "BytePath"
+StartupProject = "LDtkRaylibDemo"
 
 [Configs.Test.Win32]
 ConfigSelections = {Gamefx = {Config = "Debug"}}

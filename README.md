@@ -41,19 +41,21 @@ Create new framework or using existing:
     - Use extension features of Beef to wrap code, in the long-term, you can change your system without change gameplay code
 - Modules:
     - Tweening (use comptime reflection to avoid runtime overhead)
-    - Timer/Scheduler
+    - Timer: middle-level actions scheduler
+    - Input bindings: action/callback bindings per input type (only Raylib now)
 - Wishlist modules:
     - Full framework (include all modules, deps)
-    - Input bindings: no game handle inputs directly from mouse/keyboard or gamepad (framework dependent)
-    - Simple and fast allocator (Arena central memory allocations)
-    - Physics and simulations (high-level wrapper for existing physics engine)
-    - LDtk parser (and high-level usage like entity generation)
+    - StalkerX: Camera control
+    - Windfield: Physics and simulations (high-level wrapper for existing physics engine)
+    - LDtk: parser and high-level usage like entity/class generation
     - Resources caching, assets flow in game runtime (ie: load and cache texture, sound)
     - Package reader: famous .pak format, raylib's rres
+    - Simple and fast allocator (Arena central memory allocations)
 - Existing framework:
     - [Pile](https://github.com/EinScott/Pile)
     - [Strawberry (unmaintained)](https://github.com/MaddyThorson/StrawberryBF)
     - [Raylib Beef generator (nearly with C version, no extensions)](https://github.com/Starpelly/raylib-beef)
+
 
 ## Tools
 - Beef IDE

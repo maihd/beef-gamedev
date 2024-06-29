@@ -1,0 +1,6 @@
+FileVersion = 1
+Dependencies = {corlib = "*", Gamefx = "*"}
+
+[Project]
+Name = "BytePath"
+StartupObject = "BytePath.Program"

@@ -1,5 +1,8 @@
 FileVersion = 1
-Projects = {Gamefx = {Path = "Gamefx"}}
+Projects = {Gamefx = {Path = "Gamefx"}, Raylib = {Path = "libs/raylib-beef"}, BytePath = {Path = "examples/BytePath"}}
+
+[Workspace]
+StartupProject = "BytePath"
 
 [Configs.Test.Win32]
 ConfigSelections = {Gamefx = {Config = "Debug"}}

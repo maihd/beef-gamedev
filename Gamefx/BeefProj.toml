@@ -1,5 +1,7 @@
 FileVersion = 1
+Dependencies = {corlib = "*", Raylib = "*"}
 
 [Project]
 Name = "Gamefx"
 DefaultNamespace = ""
+ProcessorMacros = ["RAYLIB"]

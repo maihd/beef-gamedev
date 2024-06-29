@@ -135,6 +135,13 @@ public class Timer
 
     }
 
+	private mixin ClearAndDeleteItems(var container)
+	{
+		for (var value in container)
+			delete:this value;
+		container.Clear();
+	}
+
     public void Clear()
     {
         ClearAndDeleteItems!(routines);

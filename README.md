@@ -60,7 +60,8 @@ Create new framework or using existing:
 ## Tools
 - Beef IDE
 - [LDtk](https://ldtk.io/)
-- [Pixi](https://foxnne.github.io/pixi/) free pixel art editor like [Asesprite](https://www.aseprite.org/)
+- [Asesprite](https://www.aseprite.org/) pixel art editor
+- [Pixi](https://foxnne.github.io/pixi/) free pixel art editor
 - [Raylib tooling set](https://raylibtech.itch.io/)
 - [Raylib's rres](https://github.com/raysan5/rres)
 

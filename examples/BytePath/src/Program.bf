@@ -1,10 +1,12 @@
 namespace BytePath;
 
 using System;
+using BytePath.GameObjects;
 
 static
 {
 	public static Input gInput;
+	public static Timer gTimer;
 }
 
 class Program : Raylib.RaylibApp
@@ -20,9 +22,12 @@ class Program : Raylib.RaylibApp
 			.Run();
 	}
 
+	Player tmpPlayer;
+
 	protected override void Init()
 	{
 		gInput = new Input();
+		gTimer = new Timer();
 
 		gInput.Bind("left", .Key(.KEY_LEFT));
 		gInput.Bind("left", .Key(.KEY_A));
@@ -36,20 +41,31 @@ class Program : Raylib.RaylibApp
 		gInput.Bind("down", .Key(.KEY_DOWN));
 		gInput.Bind("down", .Key(.KEY_S));
 
-		gInput.Bind(.KEY_GRAVE, new:gInput () => {
+		gInput.Bind(.KEY_GRAVE, new () => {
 			Raylib.TraceLog(.LOG_WARNING, "GC Report will be printed in Beef IDE");
 			GC.Report();
+		});
+
+		tmpPlayer = new Player();
+		tmpPlayer.y = Raylib.GetScreenHeight() * 0.5f;
+		gInput.Bind(.KEY_SPACE, new () => {
+			gTimer.TweenTo(tmpPlayer, (x: Raylib.GetScreenWidth() * 0.5f), 2.0f, new:gTimer (s, e, t) => Raylib.Easings.EaseBackInOut(t, s, e, 1.0f));
 		});
 	}
 
 	protected override void Close()
 	{
+		DeleteAndNullify!(tmpPlayer);
+
 		DeleteAndNullify!(gInput);
+		DeleteAndNullify!(gTimer);
 	}
 
 	protected override void Draw()
 	{
 		Raylib.ClearBackground(.BLACK);
+
+		tmpPlayer.Draw();
 
 #if DEBUG
 		Raylib.DrawText(scope $"Mouse {gInput.MouseX}, {gInput.MouseY}", 10, 10, 12, .WHITE);
@@ -59,6 +75,7 @@ class Program : Raylib.RaylibApp
 	protected override void Update(float dt)
 	{
 		gInput.Update();
+		gTimer.Update(dt);
 
 		if (gInput.IsActionPressed("left"))
 		{

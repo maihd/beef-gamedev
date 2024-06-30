@@ -17,10 +17,10 @@ class Program : Raylib.RaylibApp
 	protected override void Init()
 	{
 		let bufferSize = 10 * 1024 * 1024;
-		let buffer = new uint8[bufferSize]*;
-		defer delete buffer;
+		let buffer = System.Internal.Malloc(bufferSize);
+		defer System.Internal.Free(buffer);
 
 		let ldtkContext = LDtkContext.UseWindows(buffer, bufferSize);
-		LDtk.Parse("assets/sample.ldtk", ldtkContext, .None);
+		let ldtkWorld = LDtk.Parse("assets/sample.ldtk", ldtkContext, .None).GetValueOrDefault();
 	}
 }

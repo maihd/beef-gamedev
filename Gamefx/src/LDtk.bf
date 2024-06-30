@@ -332,8 +332,17 @@ enum LDtkErrorCode
     ParseJsonFailed,
     MissingLevels,
 
+	MissingLevelProperties,
+	InvalidLevelProperties,
+
     MissingWorldProperties,
     InvalidWorldProperties,
+
+	MissingEnumDefProperties,
+	InvalidEnumDefProperties,
+
+	MissingEntityDefProperties,
+	InvalidEntityDefProperties,
 
     MissingLayerDefProperties,
     InvalidLayerDefProperties,
@@ -539,10 +548,16 @@ public static class LDtk
 		}
 	}
 
+	private struct AllocUpper : this(Allocator* allocator)
+	{
+		public void* Alloc(int size, int align) mut
+		{
+			return allocator.AllocUpper(null, 0, (.)size);
+		}
+	}
+
 	public static Result<LDtkWorld, LDtkError> Parse(StringView ldtkPath, LDtkContext context, LDtkParseFlags flags)
 	{
-		var allocator = Allocator(context.buffer, context.bufferSize);
-
 		char8* content = (char8*)context.buffer;
 		int32 contentLength = context.bufferSize;
 		let readResult = context.readFileFn(ldtkPath, content, &contentLength);
@@ -552,15 +567,616 @@ public static class LDtk
 		}
 		content[contentLength] = 0;
 		let jsonContent = StringView(content, contentLength);
+		
+		var allocator = Allocator(context.buffer, context.bufferSize);
+		var allocatorUpper = AllocUpper(&allocator);
 
-		let json = scope JsonTree();
+		let json = new JsonTree(); defer delete json;
 		if (Json.ReadJson(jsonContent, json) case .Err(let error))
 		{
 			return .Err(LDtkError(.ParseJsonFailed, error.ToString(..new:allocator String())));
 		}
 
-		LDtkWorld world = default;
+		if (json.root case .Object(let jsonWorld))
+		{
+			if (!jsonWorld.TryGetValue("defs", let jsonDefsElement))
+			{
+			    return .Err(LDtkError(.MissingWorldProperties, "'defs' is not found"));
+			}
+
+			if (jsonDefsElement case .Object(let jsonDefs))
+			{
+				LDtkWorld world = Try!(ReadWorldProperties(jsonWorld));
+
+				LDtkError readDefsError;
+				readDefsError = ReadEnums(jsonDefs, ref allocator, ref world);
+				if (readDefsError.code != .None)
+				{
+				    return .Err(readDefsError);
+				}
+
+				readDefsError = ReadTilesets(jsonDefs, ref allocator, ref world);
+				if (readDefsError.code != .None)
+				{
+				    return .Err(readDefsError);
+				}
+
+				readDefsError = ReadLayerDefs(jsonDefs, ref allocator, ref world);
+				if (readDefsError.code != .None)
+				{
+				    return .Err(readDefsError);
+				}
+
+				readDefsError = ReadEntityDefs(jsonDefs, ref allocator, ref world);
+				if (readDefsError.code != .None)
+				{
+				    return .Err(readDefsError);
+				}
+
+				let readLevelsError = ReadLevels(jsonWorld, ldtkPath, ref allocator, context.readFileFn, flags, ref world);
+				if (readLevelsError.code != .None)
+				{
+				    return .Err(readDefsError);
+				}
+
+				return .Ok(world);
+			}
+			else
+			{
+				return .Err(LDtkError(.InvalidWorldProperties, "defs must be an object"));
+			}	
+		}
+		else
+		{
+			return .Err(LDtkError(.UnnameError, "LDtk json file is not well-form. Root must be an object."));
+		}
+	}
+
+	private static Result<LDtkWorld, LDtkError> ReadWorldProperties(JsonObjectData json)
+	{
+		var world = LDtkWorld();
+
+		if (json.TryGetValue("defaultPivotX", let jsonDefaultPivotX))
+		{
+			world.defaultPivotX = (.)jsonDefaultPivotX.AsNumber();
+		}
+		else
+		{
+			return .Err(LDtkError(.MissingWorldProperties, "'defaultPivotX' is not found"));
+		}
+
+		if (json.TryGetValue("defaultPivotY", let jsonDefaultPivotY))
+		{
+			world.defaultPivotY = (.)jsonDefaultPivotY.AsNumber();
+		}
+		else
+		{
+			return .Err(LDtkError(.MissingWorldProperties, "'defaultPivotX' is not found"));
+		}
+
+		if (json.TryGetValue("defaultGridSize", let jsonDefaultGridSize))
+		{
+			world.defaultGridSize = (.)jsonDefaultGridSize.AsNumber();
+		}
+		else
+		{
+			return .Err(LDtkError(.MissingWorldProperties, "'defaultGridSize' is not found"));
+		}
+
+		if (json.TryGetValue("bgColor", let jsonBgColor))
+		{
+			world.backgroundColor = .(jsonBgColor.AsString());
+		}
+		else
+		{
+			return .Err(LDtkError(.MissingWorldProperties, "'bgColor' is not found"));
+		}
+
+		if (!json.TryGetValue("worldLayout", let jsonWorldLayoutName))
+		{
+		    return .Err(LDtkError(.MissingWorldProperties, "'worldLayout' is not found"));
+		}
+
+		let worldLayoutName = jsonWorldLayoutName.AsString();
+		switch (worldLayoutName)
+		{
+		case "Free":
+			world.layout = .Free;
+
+		case "GridVania":
+			world.layout = .GridVania;
+
+		case "LinearHorizontal":
+			world.layout = .LinearHorizontal;
+
+		case "LinearVertical":
+			world.layout = .LinearVertical;
+
+		default:
+			return .Err(LDtkError(.InvalidWorldProperties, "Unknown GridLayout"));
+		}
+
 		return .Ok(world);
+	}
+
+	private static LDtkError ReadEnums(JsonObjectData jsonDefs, ref Allocator allocator, ref LDtkWorld world)
+	{
+		if (!jsonDefs.TryGetValue("enums", let jsonEnumsElement))
+		{
+		    return .(.MissingWorldProperties, "defs.enums is not found");
+		}
+
+		if (jsonEnumsElement case .Array(let jsonEnums))
+		{
+			let enumCount = jsonEnums.Count;
+			let enums = new:allocator LDtkEnum[enumCount]*;
+
+			for (let i < enumCount)
+			{
+				var enumDef = ref enums[i];
+				let jsonEnum = jsonEnums[i].AsObject();
+
+				enumDef.id = (.)jsonEnum["uid"].AsNumber();
+				enumDef.name = new:allocator String(jsonEnum["identifier"].AsString());
+
+				enumDef.tilesetId = (.)jsonEnum["iconTilesetUid"].AsNumber();
+
+				if (jsonEnum.GetValueOrDefault("externalRelPath") case .String(let jsonExternalRelPath))
+				{
+					enumDef.externalPath = new:allocator String(jsonExternalRelPath);
+				}
+
+				if (jsonEnum.GetValueOrDefault("externalFileChecksum") case .String(let jsonExternalFileChecksum))
+				{
+					enumDef.externalChecksum = new:allocator String(jsonExternalFileChecksum);
+				}
+				
+				if (!jsonEnum.TryGetValue("values", let jsonValuesElement))
+				{
+					return .(.MissingEnumDefProperties, "values");
+				}
+
+				if (jsonValuesElement case .Array(let jsonValues))
+				{
+					let valueCount = jsonValues.Count;
+					let values = new:allocator LDtkEnumValue[valueCount]*;
+					for (let j < valueCount)
+					{
+						var value = ref values[j];
+						let jsonValue = jsonValues[j].AsObject();
+
+						value.name = new:allocator String(jsonValue["id"].AsString());
+						value.tileId = (.)jsonValue["tileId"].AsNumber();
+						value.color = .((uint32)jsonValue["color"].AsNumber());
+					}
+
+					enumDef.values = .(values, valueCount);
+				}
+				else
+				{
+					return .(.InvalidEnumDefProperties, "values");
+				}
+			}
+
+			world.enums = .(enums, enumCount);
+			return .(.None, "");
+		}
+		else
+		{
+			return .(.InvalidWorldProperties, "defs.enums must be an array.");
+		}
+	}
+
+	private static LDtkError ReadTilesets(JsonObjectData jsonDefs, ref Allocator allocator, ref LDtkWorld world)
+	{
+		if (!jsonDefs.TryGetValue("tilesets", let jsonTilesetsElement))
+		{
+		    return .(.MissingWorldProperties, "defs.tilesets is not found");
+		}
+
+		if (jsonTilesetsElement case .Array(let jsonTilesets))
+		{
+			let tilesetCount = jsonTilesets.Count;
+			let tilesets = new:allocator LDtkTileset[tilesetCount]*;
+
+			for (let i < tilesetCount)
+			{
+				var tileset = ref tilesets[i];
+				let jsonTileset = jsonTilesets[i].AsObject();
+
+				tileset.id = (.)jsonTileset["uid"].AsNumber();
+				tileset.index = (.)i;
+				tileset.name = new:allocator String(jsonTileset["identifier"].AsString());
+				tileset.path = new:allocator String(jsonTileset["relPath"].AsString());
+				tileset.width = (.)jsonTileset["pxWid"].AsNumber();
+				tileset.height = (.)jsonTileset["pxHei"].AsNumber();
+				tileset.tileSize = (.)jsonTileset["tileGridSize"].AsNumber();
+				tileset.spacing = (.)jsonTileset["spacing"].AsNumber();
+				tileset.padding = (.)jsonTileset["padding"].AsNumber();
+
+				if (jsonTileset.TryGetValue("tagsSourceEnumUid", let jsonTagsSourceEnumUid) && jsonTagsSourceEnumUid case .Number(let tagsEnumId))
+				{
+				    tileset.tagsEnumId = (.)tagsEnumId;
+				}
+				else
+				{
+				    tileset.tagsEnumId = 0;
+				}
+			}
+
+			world.tilesets = .(tilesets, tilesetCount);
+			return .(.None, "");
+		}
+		else
+		{
+			return .(.InvalidWorldProperties, "defs.tilesets must be an array.");
+		}
+	}
+
+	private static LDtkError ReadLayerDefs(JsonObjectData jsonDefs, ref Allocator allocator, ref LDtkWorld world)
+	{
+		if (!jsonDefs.TryGetValue("layers", let jsonLayerDefsElement))
+		{
+		    return .(.MissingWorldProperties, "defs.layers is not found");
+		}
+
+		if (jsonLayerDefsElement case .Array(let jsonLayerDefs))
+		{
+			let layerDefCount = jsonLayerDefs.Count;
+			let layerDefs = new:allocator LDtkLayerDef[layerDefCount]*;
+
+			for (let i < layerDefCount)
+			{
+				var layerDef = ref layerDefs[i];
+				let jsonLayerDef = jsonLayerDefs[i].AsObject();
+
+				switch (jsonLayerDef["type"].AsString())
+				{
+				case "Tiles":
+					layerDef.type = .Tiles;
+
+				case "IntGrid":
+					layerDef.type = .IntGrid;
+
+				case "Entities":
+					layerDef.type = .Entities;
+
+				case "AutoLayer":
+					layerDef.type = .AutoLayer;
+				}
+
+				layerDef.id = (.)jsonLayerDef["uid"].AsNumber();
+				layerDef.name = new:allocator String(jsonLayerDef["identifier"].AsString());
+
+				layerDef.gridSize = (.)jsonLayerDef["gridSize"].AsNumber();
+				layerDef.opacity = (.)jsonLayerDef["displayOpacity"].AsNumber();
+				layerDef.offsetX = (.)jsonLayerDef["pxOffsetX"].AsNumber();
+				layerDef.offsetY = (.)jsonLayerDef["pxOffsetY"].AsNumber();
+				layerDef.tilePivotX = (.)jsonLayerDef["tilePivotX"].AsNumber();
+				layerDef.tilePivotY = (.)jsonLayerDef["tilePivotY"].AsNumber();
+
+				int32 tilesetDefId = -1;
+				if (jsonLayerDef.TryGetValue("tilesetDefUid", var jsonIdElement) && jsonIdElement case .Number(let id))
+				{
+					tilesetDefId = (.)id;
+				}
+				if (jsonLayerDef.TryGetValue("autoTilesetDefUid", out jsonIdElement) && jsonIdElement case .Number(let id))
+				{
+					tilesetDefId = (.)id;
+				}
+
+				if (tilesetDefId == -1)
+				{
+					//return .(.MissingLayerDefProperties, "'tilesetDefId' is invalid");
+				}
+				layerDef.tilesetDefId = tilesetDefId;
+
+				if (!jsonLayerDef.TryGetValue("intGridValues", let jsonIntGridValuesElement))
+				{
+					return .(.MissingLayerDefProperties, "'intGridValues' is invalid");
+				}
+
+				if (jsonIntGridValuesElement case .Array(let jsonIntGridValues))
+				{
+					let intGridValueCount = jsonIntGridValues.Count;
+					let intGridValues = new:allocator LDtkIntGridValue[intGridValueCount]*;
+
+					for (let j < intGridValueCount)
+					{
+						var intGridValue = ref intGridValues[j];
+						let jsonIntGridValue = jsonIntGridValues[j].AsObject();
+
+						if (jsonIntGridValue["identifier"] case .String(let name))
+						{
+							intGridValue.name = new:allocator String(name);
+						}
+
+						intGridValue.value = (.)jsonIntGridValue["value"].AsNumber();
+						intGridValue.color = .(jsonIntGridValue["color"].AsString());
+					}
+
+					layerDef.intGridValues = .(intGridValues, intGridValueCount);
+				}
+				else
+				{
+					return .(.MissingLayerDefProperties, "'intGridValues' is invalid");
+				}
+			}
+
+			world.layerDefs = .(layerDefs, layerDefCount);
+			return .(.None, "");
+		}
+		else
+		{
+			return .(.InvalidWorldProperties, "defs.layers must be an array.");
+		}
+	}
+
+	private static LDtkError ReadEntityDefs(JsonObjectData jsonDefs, ref Allocator allocator, ref LDtkWorld world)
+	{
+		if (!jsonDefs.TryGetValue("entities", let jsonEntitiesElement))
+		{
+		    return .(.MissingWorldProperties, "defs.entities is not found");
+		}
+
+		if (jsonEntitiesElement case .Array(let jsonEntities))
+		{
+			let entityDefCount = jsonEntities.Count;
+			let entityDefs = new:allocator LDtkEntityDef[entityDefCount]*;
+
+			for (let i < entityDefCount)
+			{
+				var entityDef = ref entityDefs[i];
+				let jsonEntityDef = jsonEntities[i].AsObject();
+
+				entityDef.id = (.)jsonEntityDef["uid"].AsNumber();
+				entityDef.name = new:allocator String(jsonEntityDef["identifier"].AsString());
+				entityDef.width = (.)jsonEntityDef["width"].AsNumber();
+				entityDef.height = (.)jsonEntityDef["height"].AsNumber();
+				entityDef.color = .(jsonEntityDef["color"].AsString());
+				entityDef.pivotX = (.)jsonEntityDef["pivotX"].AsNumber();
+				entityDef.pivotY = (.)jsonEntityDef["pivotY"].AsNumber();
+
+				if (jsonEntityDef["tilesetId"] case .Number(let tilesetId))
+				{
+					entityDef.tilesetId = (.)tilesetId;
+				}
+
+				if (jsonEntityDef["tileId"] case .Number(let tileId))
+				{
+					entityDef.tileId = (.)tileId;
+				}				
+
+				if (!jsonEntityDef.TryGetValue("tags", let jsonTagsElement))
+				{
+					return .(.MissingEntityDefProperties, "tags is missing");
+				}
+
+				if (jsonTagsElement case .Array(let jsonTags))
+				{
+					let tagCount = jsonTags.Count;
+					let tags = new:allocator StringView[tagCount]*;
+					for (let j < tagCount)
+					{
+						if (jsonTags[j] case .String(let jsonTagStr))
+						{
+							tags[j] = new:allocator String(jsonTagStr);
+						}
+						else
+						{
+							return .(.InvalidEntityDefProperties, "tag must be string");
+						}	
+					}
+
+					entityDef.tags = .(tags, tagCount);
+				}
+				else
+				{
+					return .(.InvalidEntityDefProperties, "tags must be an array");
+				}
+			}
+
+			world.entityDefs = .(entityDefs, entityDefCount);
+			return .(.None, "");
+		}
+		else
+		{
+			return .(.InvalidWorldProperties, "defs.entities must be an array.");
+		}
+	}
+
+	private static LDtkError ReadLayer(JsonObjectData jsonDefs, ref Allocator allocator, ref LDtkLayer layer, ref LDtkLevel level, ref LDtkWorld world)
+	{
+		// Name & type
+
+		// Meta ids
+
+		// Base properties
+
+		// Read Tiles
+
+		// Read IntGrid
+
+		// Read Entities
+
+		return .(.None, "");
+	}
+
+	private static LDtkError ReadLevel(JsonObjectData jsonLevel, StringView levelDirectory, ref Allocator allocator, LDtkReadFileFn readFileFn, ref LDtkLevel level, LDtkParseFlags flags, ref LDtkWorld world)
+	{
+		// Reading base properties
+
+		level.id = (.)jsonLevel["uid"].AsNumber();
+		level.name = new:allocator String(jsonLevel["identifier"].AsString());
+		
+		level.worldX = (.)jsonLevel["worldX"].AsNumber();
+		level.worldY = (.)jsonLevel["worldY"].AsNumber();
+		level.width = (.)jsonLevel["pxWid"].AsNumber();
+		level.height = (.)jsonLevel["pxHei"].AsNumber();
+
+		// Reading background fields
+
+		level.bgColor = .(jsonLevel["__bgColor"].AsString());
+		level.bgPath = new:allocator String(jsonLevel["bgRelPath"].AsString());
+		level.bgPivotX = (.)jsonLevel["bgPivotX"].AsNumber();
+		level.bgPivotY = (.)jsonLevel["bgPivotY"].AsNumber();
+
+		if (jsonLevel.TryGetValue("__bgPos", let jsonBgPosElement) && jsonBgPosElement case .Object(let jsonBgPos))
+		{
+			if (jsonBgPos.TryGetValue("topLeftPx", let jsonTopLeftPxElement) && jsonBgPosElement case .Array(let jsonTopLeftPx))
+			{
+				level.bgPosX = (.)jsonTopLeftPx[0].AsNumber();
+				level.bgPosY = (.)jsonTopLeftPx[1].AsNumber();
+			}
+
+			if (jsonBgPos.TryGetValue("scale", let jsonScaleElement) && jsonScaleElement case .Array(let jsonScale))
+			{
+				level.bgScaleX = (.)jsonScale[0].AsNumber();
+				level.bgScaleY = (.)jsonScale[1].AsNumber();
+			}
+
+			if (jsonBgPos.TryGetValue("cropRect", let jsonCropRectElement) && jsonCropRectElement case .Array(let jsonCropRect))
+			{
+				level.bgCropX      = (.)jsonCropRect[0].AsNumber();
+				level.bgCropY      = (.)jsonCropRect[1].AsNumber();
+				level.bgCropWidth  = (.)jsonCropRect[2].AsNumber();
+				level.bgCropHeight = (.)jsonCropRect[3].AsNumber();
+			}
+		}
+
+		// Reading neighbours
+
+		// Reading field instances
+
+		// Reading layer instances
+
+		if (!jsonLevel.TryGetValue("layerInstances", var jsonLayerInstancesElement))
+		{
+			return .(.MissingLevelProperties, "layerInstances is not found");
+		}
+		
+		// Something unclear here
+		// Why we donot have a field to specify that
+		// Layer instances are define in other files
+		if (jsonLayerInstancesElement case .Null)
+		{
+			let externalRelPath = jsonLevel["externalRelPath"].AsString();
+			let levelFilePath = scope $"{levelDirectory}/{externalRelPath}\0";
+
+			int32 fileSize = 0;
+			var readFileError = readFileFn(levelFilePath, null, &fileSize);
+			if (readFileError.code != .None)
+			{
+				return readFileError;
+			}
+
+			let fileBuffer = new:allocator char8[fileSize]*;
+			if (fileBuffer == null)
+			{
+				return .(.OutOfMemory, "Cannot read file because out of memory");
+			}
+
+			readFileError = readFileFn(levelFilePath, fileBuffer, &fileSize);
+			if (readFileError.code != .None)
+			{
+				return readFileError;
+			}
+
+			let jsonTreeLevel = new JsonTree();
+			defer:: delete jsonTreeLevel;
+
+			if (Json.ReadJson(.(fileBuffer, fileSize), jsonTreeLevel) case .Err(let error))
+			{
+				return .(.ParseJsonFailed, error.ToString(..new:allocator String()));
+			}
+
+			if (jsonTreeLevel.root case .Object(let jsonLevelFile))
+			{
+				jsonLayerInstancesElement = jsonLevelFile.GetValueOrDefault("layerInstances");
+			}
+			else
+			{
+				return .(.InvalidLevelProperties, new:allocator $"layerInstances must be object. In external file: {levelFilePath}.");
+			}
+		}
+
+		if (jsonLayerInstancesElement case .Array(let jsonLayerInstances))
+		{			
+			let layerCount = jsonLayerInstances.Count;
+			let layers = new:allocator LDtkLayer[layerCount]*;
+
+			for (let i < layerCount)
+			{
+				if (jsonLayerInstances[i] case .Object(let jsonLayer))
+				{
+					let readError = ReadLayer(jsonLayer, ref allocator, ref layers[i], ref level, ref world);
+					if (readError.code != .None)
+					{
+						return readError;
+					}	
+				}
+				else
+				{
+					return .(.InvalidLevelProperties, "layerInstance must be object");
+				}
+			}	
+
+			if (flags.HasFlag(.LayerReverseOrder))
+			{
+				for (let i < (layerCount >> 1))
+				{
+					let tmp = layers[i];
+					layers[i] = layers[layerCount - i - 1];
+					layers[layerCount - i - 1] = tmp;
+				}
+			}
+			
+			level.layers = .(layers, layerCount);
+			return .(.None, "");
+		}
+		else
+		{
+			return .(.InternalError, "unreachable code");
+		}
+	}
+
+	private static LDtkError ReadLevels(JsonObjectData jsonDefs, StringView ldtkPath, ref Allocator allocator, LDtkReadFileFn readFileFn, LDtkParseFlags flags, ref LDtkWorld world)
+	{
+		if (!jsonDefs.TryGetValue("levels", let jsonLevelsElement))
+		{
+		    return .(.MissingWorldProperties, "defs.levels is not found");
+		}
+
+		let levelDirectory = ldtkPath.Substring(0, ldtkPath.LastIndexOf('/'));
+
+		if (jsonLevelsElement case .Array(let jsonLevels))
+		{
+			let levelCount = jsonLevels.Count;
+			let levels = new:allocator LDtkLevel[levelCount]*;
+
+			for (let i < levelCount)
+			{
+				if (jsonLevels[i] case .Object(let jsonLevel))
+				{
+					let readLevelError = ReadLevel(jsonLevel, levelDirectory, ref allocator, readFileFn, ref levels[i], flags, ref world);
+					if (readLevelError.code != .None)
+					{
+						return readLevelError;
+					}
+				}
+				else
+				{
+					return .(.InvalidLevelProperties, "level must be object");
+				}
+			}
+
+			world.levels = .(levels, levelCount);
+			return .(.None, "");
+		}
+		else
+		{
+			return .(.InvalidWorldProperties, "defs.levels must be an object.");
+		}
 	}
 }
 

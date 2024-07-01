@@ -224,7 +224,7 @@ struct LDtkLayer
     public float					tilePivotX;
     public float					tilePivotY;
 
-    public int32					visible;
+    public bool						visible;
     public float					opacity;
 
     public LDtkTileset				tileset;
@@ -307,12 +307,15 @@ struct LDtkEntityDef
 
 struct LDtkWorld
 {
-    public LDtkWorldLayout layout;
-    public LDtkColor       backgroundColor;
+    public LDtkWorldLayout 		layout;
+    public LDtkColor       		backgroundColor;
 
-    public float           defaultPivotX;
-    public float           defaultPivotY;
-    public int32           defaultGridSize;
+	public int32 				gridWidth;
+	public int32				gridHeight;
+
+    public float           		defaultPivotX;
+    public float           		defaultPivotY;
+    public int32           		defaultGridSize;
 
     public Span<LDtkTileset>    tilesets;
 
@@ -323,6 +326,9 @@ struct LDtkWorld
     public Span<LDtkEntityDef>  entityDefs;
 
     public Span<LDtkLevel>      levels;
+
+	public int32				width => gridWidth * defaultGridSize;
+	public int32				height => gridHeight * defaultGridSize;
 }
 
 enum LDtkErrorCode
@@ -569,7 +575,6 @@ public static class LDtk
 		let jsonContent = StringView(content, contentLength);
 		
 		var allocator = Allocator(context.buffer, context.bufferSize);
-		var allocatorUpper = AllocUpper(&allocator);
 
 		let json = new JsonTree(); defer delete json;
 		if (Json.ReadJson(jsonContent, json) case .Err(let error))
@@ -635,6 +640,9 @@ public static class LDtk
 	private static Result<LDtkWorld, LDtkError> ReadWorldProperties(JsonObjectData json)
 	{
 		var world = LDtkWorld();
+
+		world.gridWidth = (.)json["worldGridWidth"].AsNumber();
+		world.gridHeight = (.)json["worldGridHeight"].AsNumber();
 
 		if (json.TryGetValue("defaultPivotX", let jsonDefaultPivotX))
 		{
@@ -985,19 +993,328 @@ public static class LDtk
 		}
 	}
 
-	private static LDtkError ReadLayer(JsonObjectData jsonDefs, ref Allocator allocator, ref LDtkLayer layer, ref LDtkLevel level, ref LDtkWorld world)
+	private static LDtkError ReadLayer(JsonObjectData jsonLayer, ref Allocator allocator, ref LDtkLayer layer, ref LDtkLevel level, ref LDtkWorld world)
 	{
 		// Name & type
 
+		layer.name = new:allocator String(jsonLayer["__identifier"].AsString());
+
+		let type = jsonLayer["__type"].AsString();
+		switch (type)
+		{
+		case "Tiles":
+			layer.type = .Tiles;
+
+		case "Entities":
+			layer.type = .Entities;
+
+		case "IntGrid":
+			layer.type = .IntGrid;
+
+		case "AutoLayer":
+			layer.type = .AutoLayer;
+		}
+
 		// Meta ids
+
+		layer.levelId = (.)jsonLayer["levelId"].AsNumber();
+		layer.layerDefId = (.)jsonLayer["layerDefUid"].AsNumber();
 
 		// Base properties
 
+		layer.cols = (.)jsonLayer["__cWid"].AsNumber();
+		layer.rows = (.)jsonLayer["__cHei"].AsNumber();
+		layer.tileSize = (.)jsonLayer["__gridSize"].AsNumber();
+		layer.opacity = (.)jsonLayer["__opacity"].AsNumber();
+		layer.offsetX = (.)jsonLayer["__pxTotalOffsetX"].AsNumber();
+		layer.offsetY = (.)jsonLayer["__pxTotalOffsetY"].AsNumber();
+		layer.visible = jsonLayer["visible"].AsBool();
+
+		// Read tileset
+
+		if (layer.type != .Entities)
+		{
+			var haveTileset = true;
+
+			if (!jsonLayer.TryGetValue("__tilesetDefUid", let jsonTilesetDefUid) || !(jsonTilesetDefUid case .Number))
+			{
+				haveTileset = false;
+			}
+
+			if (!jsonLayer.TryGetValue("__tilesetRelPath", let jsonTilesetRelPath) || !(jsonTilesetRelPath case .String))
+			{
+				haveTileset = false;
+			}
+
+			if (haveTileset)
+			{
+				var tilesetIndex = -1;
+				let tilesetId = (int)jsonTilesetDefUid.AsNumber();
+				for (let tileset in ref world.tilesets)
+				{
+					if (tileset.id == tilesetId)
+					{
+						tilesetIndex = tileset.index;
+						break;
+					}
+				}
+
+				if (tilesetIndex == -1)
+				{
+					return .(.UnnameError, "Missing tileset.");
+				}
+
+				var tileset = ref world.tilesets[tilesetIndex];
+				tileset.path = new:allocator String(jsonTilesetRelPath.AsString());
+
+				layer.tileset = tileset;
+			}
+			else
+			{
+				layer.tileset = default;
+			}
+		}
+		else
+		{
+			layer.tileset = default;
+		}
+
 		// Read Tiles
+
+		StringView gridTilesFieldName = ?;
+		if (layer.type == .IntGrid || layer.type == .AutoLayer)
+		{
+			gridTilesFieldName = "autoLayerTiles";
+		}
+		else
+		{
+			gridTilesFieldName = "gridTiles";
+		}
+
+		let coordIdIndex = (layer.type == .IntGrid || layer.type == .AutoLayer) ? 1 : 0;
+
+		if (jsonLayer.TryGetValue(gridTilesFieldName, let jsonGridTilesElement) && jsonGridTilesElement case .Array(let jsonGridTiles))
+		{
+			let tileCount = jsonGridTiles.Count;
+			let tiles = new:allocator LDtkTile[tileCount]*;
+
+			for (let i < tileCount)
+			{
+				var tile = ref tiles[i];
+				let jsonTile = jsonGridTiles[i].AsObject();
+
+				tile.id = (.)jsonTile["t"].AsNumber();
+
+				// coordId
+
+				if (jsonTile.TryGetValue("d", let jsonDElement) && jsonDElement case .Array(let jsonD))
+				{
+					if (jsonD[coordIdIndex] case .Number(let coordId))
+					{
+						tile.coordId = (.)coordId;
+					}
+					else
+					{
+						return .(.UnnameError, "coordId must be number");
+					}
+				}
+				else
+				{
+					return .(.UnnameError, "d is missing in tile");
+				}
+
+				// Position
+
+				if (jsonTile.TryGetValue("px", let jsonPxElement) && jsonPxElement case .Array(let jsonPx))
+				{
+					let jsonX = jsonPx[0];
+					let jsonY = jsonPx[1];
+					if (!(jsonX case .Number && jsonY case .Number))
+					{
+					    return .(.UnnameError, "px items must be number");
+					}
+
+					int32 x = (.)jsonX.AsNumber();
+					int32 y = (.)jsonY.AsNumber();
+					int32 worldX = level.worldX + x;
+					int32 worldY = level.worldY + y;
+
+					tile.x = x;
+					tile.y = y;
+					tile.worldX = worldX;
+					tile.worldY = worldY;
+				}
+				else
+				{
+					return .(.UnnameError, "px must be array");
+				}
+
+				// Texture rect
+
+				if (jsonTile.TryGetValue("src", let jsonSrcElement) && jsonSrcElement case .Array(let jsonSrc))
+				{
+					let jsonTextureX = jsonSrc[0];
+					let jsonTextureY = jsonSrc[1];
+					if (!(jsonTextureX case .Number && jsonTextureY case .Number))
+					{
+					    return .(.UnnameError, "src items must be number");
+					}
+
+					tile.textureX = (.)jsonTextureX.AsNumber();
+					tile.textureY = (.)jsonTextureY.AsNumber();
+				}
+				else
+				{
+					return .(.UnnameError, "src must be array");
+				}
+
+				// Flip
+
+				if (jsonTile.TryGetValue("f", let jsonFElement) && jsonFElement case .Number(let jsonF))
+				{
+					let flip = (uint32)jsonF;
+					let flipX = (flip  & 1u) 		!= 0;
+					let flipY = ((flip >> 1u) & 1u) != 0;
+
+					tile.flipX = flipX;
+					tile.flipY = flipY;
+				}
+				else
+				{
+					return .(.UnnameError, "f must be array");
+				}
+			}
+
+			layer.tiles = .(tiles, tileCount);
+		}
+		else
+		{
+			layer.tiles = null;
+		}
 
 		// Read IntGrid
 
+		if (jsonLayer.TryGetValue("intGridCsv", let jsonIntGridCsvElement) && jsonIntGridCsvElement case .Array(let jsonIntGridCsv))
+		{
+			let intGridValueCount = jsonIntGridCsv.Count;
+			let intGridValues = new:allocator LDtkIntGridValue[intGridValueCount]*;
+
+			for (let i < intGridValueCount)
+			{
+				if (jsonIntGridCsv[i] case .Number(let intGridIndex))
+				{
+					intGridValues[i].value = (.)intGridIndex;
+				}
+				else
+				{
+					return .(.UnnameError, "");
+				}
+			}
+
+			layer.values = .(intGridValues, intGridValueCount);
+		}
+		else if (jsonLayer.TryGetValue("intGrid", let jsonIntGridElement) && jsonIntGridElement case .Array(let jsonIntGrid))
+		{
+			LDtkLayerDef* layerDef = null;
+			for (let worldLayerDef in ref world.layerDefs)
+			{
+			    if (worldLayerDef.id == layer.layerDefId)
+			    {
+			        layerDef = &worldLayerDef;
+			        break;
+			    }
+			}
+	
+			if (layerDef == null)
+			{
+				return .(.UnnameError, "");
+			}
+
+			let intGridValueCount = jsonIntGrid.Count;
+			let intGridValues = new:allocator LDtkIntGridValue[intGridValueCount]*;
+
+			for (let i < intGridValueCount)
+			{
+				if (jsonIntGrid[i] case .Object(let jsonValuePair))
+				{
+					if (jsonValuePair.TryGetValue("coordId", let jsonCoordIdElement) && jsonCoordIdElement case .Number(let coordId)
+						&& jsonValuePair.TryGetValue("v", let jsonVElement) && jsonVElement case .Number(let v))
+					{
+						intGridValues[(.)coordId] = layerDef.intGridValues[(.)v];
+					}
+					else
+					{
+						return .(.UnnameError, "");
+					}
+				}
+				else
+				{
+					return .(.UnnameError, "");
+				}
+			}
+
+			layer.values = .(intGridValues, intGridValueCount);
+		}
+		else
+		{
+			layer.values = null;
+		}
+
 		// Read Entities
+
+		if (jsonLayer.TryGetValue("entityInstances", let jsonEntityInstancesElement) && jsonEntityInstancesElement case .Array(let jsonEntityInstances))
+		{
+			let entityCount = jsonEntityInstances.Count;
+			let entities = new:allocator LDtkEntity[entityCount]*;
+
+			for (let i < entityCount)
+			{
+				if (jsonEntityInstances[i] case .Object(let jsonEntity))
+				{
+					var entity = ref entities[i];
+					entity.name = new:allocator String(jsonEntity["__identifier"].AsString());
+					entity.defId = (.)jsonEntity["defUid"].AsNumber();
+					entity.width = (.)jsonEntity["width"].AsNumber();
+					entity.height = (.)jsonEntity["height"].AsNumber();
+
+					// Position
+
+					if (jsonEntity.TryGetValue("px", let jsonPxElement) && jsonPxElement case .Array(let jsonPx))
+					{
+						entity.x = (.)jsonPx[0].AsNumber();
+						entity.y = (.)jsonPx[1].AsNumber();
+						entity.worldX = level.worldX + entity.x;
+						entity.worldY = level.worldY + entity.y;
+					}
+
+					// Grid
+
+					if (jsonEntity.TryGetValue("__grid", let jsonGridElement) && jsonPxElement case .Array(let jsonGrid))
+					{
+						entity.gridX = (.)jsonGrid[0].AsNumber();
+						entity.gridY = (.)jsonGrid[1].AsNumber();
+					}
+
+					// Pivot
+
+					if (jsonEntity.TryGetValue("__pivot", let jsonPivotElement) && jsonPxElement case .Array(let jsonPivot))
+					{
+						entity.pivotX = (.)jsonPivot[0].AsNumber();
+						entity.pivotY = (.)jsonPivot[1].AsNumber();
+					}
+				}
+				else
+				{
+					return .(.UnnameError, "");
+				}
+			}
+
+			layer.entities = .(entities, entityCount);
+		}
+		else
+		{
+			layer.entities = null;
+		}
 
 		return .(.None, "");
 	}

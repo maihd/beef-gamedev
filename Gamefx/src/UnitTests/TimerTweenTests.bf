@@ -4,6 +4,7 @@ using System;
 
 class TimerTweenTests
 {
+	[AlwaysInclude]
 	static float DefEaseFunc(float s, float e, float t)
 	{
 		return (s * (1.0f - t)) + (e * t);
@@ -16,7 +17,8 @@ class TimerTweenTests
 
         Entity entity = scope Entity() { x = 0.0f, y = 0.0f };
 
-        timer.TweenTo(entity, (x: 10.0f), 1.0f, => DefEaseFunc);
+		timer.TweenTo(entity, (x: 10.0f), 1.0f, new:timer => DefEaseFunc);
+        //timer.TweenTo(entity, (x: 10.0f), 1.0f, => DefEaseFunc);
         timer.Update(0.0f);
         timer.Update(1.0f);
         Test.Assert(entity.x == 10.0f);

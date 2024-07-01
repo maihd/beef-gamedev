@@ -1,5 +1,5 @@
 /*
-Beef GameFX Input - v1.1 - https://github.com/EinScott/json
+EinScott Json - v1.1 - https://github.com/EinScott/json
 
 NOTES
 

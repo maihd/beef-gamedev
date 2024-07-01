@@ -43,11 +43,12 @@ Create new framework or using existing:
     - Tweening (use comptime reflection to avoid runtime overhead)
     - Timer: middle-level actions scheduler
     - Input bindings: action/callback bindings per input type (only Raylib now)
+    - LDtk: parsing the file
 - Wishlist modules:
     - Full framework (include all modules, deps)
     - StalkerX: Camera control
     - Windfield: Physics and simulations (high-level wrapper for existing physics engine)
-    - LDtk: parser and high-level usage like entity/class generation
+    - LDtk: high-level rendering for common framework, high-level usage like entity/class generation
     - Resources caching, assets flow in game runtime (ie: load and cache texture, sound)
     - Package reader: famous .pak format, raylib's rres
     - Simple and fast allocator (Arena central memory allocations)

@@ -1,9 +1,9 @@
 /*
-Beef GameFX LDtk parser - v0.1 - https://github.com/maihd/beef-gamedev
+Beef GameFX LDtk parser - v0.2 - https://github.com/maihd/beef-gamedev
 
 NOTES
 
-    This library use global allocations.
+    This library use custom allocations. Global allocations for parsing.
 
 LICENSE
 
@@ -11,20 +11,28 @@ LICENSE
 
 RECENT REVISION HISTORY:
 
+	0.2 (2024-07-01) first usable version
     0.1 (2024-06-28) designing the API
 
 ============================    Contributors    =========================
 Basic functional
     MaiHD
 
+============================    Acknowledges    =========================
+Beef JSON
+    EinScott
+
 -- Contributing are welcome --
 */
 
 
 using System;
+using System.Interop;
 using System.Diagnostics;
 
-enum LDtkDirection
+#region Data structures
+[CRepr]
+enum LDtkDirection : uint32
 {
     North,
     East,
@@ -32,7 +40,8 @@ enum LDtkDirection
     West
 }
 
-enum LDtkWorldLayout
+[CRepr]
+enum LDtkWorldLayout : uint32
 {
     Free,
     GridVania,
@@ -40,7 +49,7 @@ enum LDtkWorldLayout
     LinearVertical
 }
 
-[Packed]
+[CRepr, Packed]
 struct LDtkColor
 {
     public uint8 r;
@@ -116,6 +125,7 @@ struct LDtkColor
 	}
 }
 
+[CRepr]
 struct LDtkEnumValue
 {
     public StringView    name;
@@ -123,6 +133,7 @@ struct LDtkEnumValue
     public int32         tileId;
 }
 
+[CRepr]
 struct LDtkEnum
 {
     public int32        		id;
@@ -135,6 +146,7 @@ struct LDtkEnum
     public Span<LDtkEnumValue> 	values;
 }
 
+[CRepr]
 struct LDtkEntity
 {
     public StringView		name;
@@ -155,6 +167,7 @@ struct LDtkEntity
 	public int32			worldY;
 }
 
+[CRepr]
 struct LDtkTile
 {
     public int32     	id;
@@ -173,6 +186,7 @@ struct LDtkTile
     public bool         flipY;
 }
 
+[CRepr]
 struct LDtkIntGridValue
 {
     public StringView 	name;
@@ -180,6 +194,7 @@ struct LDtkIntGridValue
     public LDtkColor   	color;
 }
 
+[CRepr]
 struct LDtkTileset
 {
     public int32     	id;		// Id define by LDtk
@@ -198,7 +213,8 @@ struct LDtkTileset
     public int32     	tagsEnumId;
 }
 
-enum LDtkLayerType
+[CRepr]
+enum LDtkLayerType : uint32
 {
 	Tiles,
 	IntGrid,
@@ -206,6 +222,7 @@ enum LDtkLayerType
 	AutoLayer,
 }
 
+[CRepr]
 struct LDtkLayer
 {
     public StringView				name;
@@ -236,6 +253,7 @@ struct LDtkLayer
 	public Span<LDtkEntity>			entities;
 }
 
+[CRepr]
 struct LDtkLevel
 {
     public int32             	id;
@@ -247,45 +265,47 @@ struct LDtkLevel
     public int32             	worldX;
     public int32             	worldY;
 
-    public LDtkColor           bgColor;
-    public StringView         		bgPath;
+    public LDtkColor           	bgColor;
+    public StringView         	bgPath;
     public int32             	bgPosX;
     public int32             	bgPosY;
-    public float               bgCropX;
-    public float               bgCropY;
-    public float               bgCropWidth;
-    public float               bgCropHeight;
-    public float               bgScaleX;
-    public float               bgScaleY;
-    public float               bgPivotX;
-    public float               bgPivotY;
+    public float               	bgCropX;
+    public float               	bgCropY;
+    public float               	bgCropWidth;
+    public float               	bgCropHeight;
+    public float               	bgScaleX;
+    public float               	bgScaleY;
+    public float               	bgPivotX;
+    public float               	bgPivotY;
 
     public Span<LDtkLayer>		layers;
 
-    public int32[4]            neigbourCount;
-    public int32[4][16]        neigbourIds;
+    public int32[4]            	neigbourCount;
+    public int32[4][16]        	neigbourIds;
 }
 
+[CRepr]
 struct LDtkLayerDef
 {
-    public int32             id;
-    public StringView         name;
+    public int32             		id;
+    public StringView         		name;
 
-    public LDtkLayerType       type;
+    public LDtkLayerType       		type;
 
-    public int32             gridSize;
-    public float               opacity;
+    public int32             		gridSize;
+    public float               		opacity;
 
-    public int32             offsetX;
-    public int32             offsetY;
+    public int32             		offsetX;
+    public int32             		offsetY;
 
-    public float               tilePivotX;
-    public float               tilePivotY;
-    public int32             tilesetDefId;
+    public float               		tilePivotX;
+    public float               		tilePivotY;
+    public int32             		tilesetDefId;
 
     public Span<LDtkIntGridValue>   intGridValues;
 }
 
+[CRepr]
 struct LDtkEntityDef
 {
     public int32         	id;
@@ -305,6 +325,7 @@ struct LDtkEntityDef
     public Span<StringView> tags;
 }
 
+[CRepr]
 struct LDtkWorld
 {
     public LDtkWorldLayout 		layout;
@@ -326,11 +347,10 @@ struct LDtkWorld
     public Span<LDtkEntityDef>  entityDefs;
 
     public Span<LDtkLevel>      levels;
-
-	public int32				width => gridWidth * defaultGridSize;
-	public int32				height => gridHeight * defaultGridSize;
 }
+#endregion
 
+#region Error handling
 enum LDtkErrorCode
 {
     None,
@@ -374,7 +394,9 @@ struct LDtkError
 		this.message = message;
 	}
 }
+#endregion
 
+#region LDtkContext: Allocator, IO
 function LDtkError LDtkReadFileFn(StringView fileName, void* buffer, int32* bufferSize);
 
 struct LDtkContext
@@ -392,7 +414,7 @@ struct LDtkContext
 
 	public static Self GetDefault(void* buffer, int32 bufferSize)
 	{
-		return .();
+		return UseStd(buffer, bufferSize);
 	}
 
 #if BF_PLATFORM_WINDOWS
@@ -440,15 +462,10 @@ struct LDtkContext
 		return .(.None, "");
 	}
 #endif
-
-#if RAYLIB
-	public static Self UseRaylib(void* buffer, int32 bufferSize)
-	{
-		return .();
-	}
-#endif
 }
+#endregion
 
+#region Parsing
 enum LDtkParseFlags
 {
     None,
@@ -1496,6 +1513,7 @@ public static class LDtk
 		}
 	}
 }
+#endregion
 
 /*
 ------------------------------------------------------------------------------

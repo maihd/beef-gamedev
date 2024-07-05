@@ -80,5 +80,12 @@ Create new framework or using existing:
 - I have no experience for on gaming console, but [Evening Star's Penny's Big Breakaway](https://www.youtube.com/watch?v=1hAgpRYM2M8&pp=ygUVcGVubnkncyBiaWcgYnJlYWthd2F5) proof it [worked](https://steamcommunity.com/app/1955230/discussions/0/4346606879517102842)
 
 
+## Books, videos, tutorials
+Because Beef have C# syntax with C++ semantics, so game tutorials/books from C++/C# can use.
+- [Game Programming Pattern book](http://gameprogrammingpatterns.com/): old but gold, starting point for gamedev.
+- [DeepNight Tutorials](https://deepnight.net/tutorials/): LDtk author, who use Haxe, but Haxe some many features Beef have, and familiar syntax. Easy apply to Beef.
+- XNA/FNA/MonoGame tutorials: MonoGame is C#, easy to apply Beef (Mai NeonShooter is based from [this](https://code.tutsplus.com/make-a-neon-vector-shooter-in-xna-basic-gameplay--gamedev-9859t)).
+
+
 ## Source code license
 MIT License. Copyright (c) 2024 MaiHD. Detais in [LICENSE](/LICENSE).

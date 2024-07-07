@@ -17,12 +17,10 @@ class Program : Raylib.RaylibApp
 		program.Run();
 	}
 
-	void* buffer;
 	LDtkWorld ldtkWorld;
+	LDtkRenderer ldtkRenderer;
 
 	Texture	worldBgTexture;
-	Texture[32] levelBgTextures;
-	Texture[32] tilesetTextures;
 
 	int currentLevelIndex = 0;
 	LDtkLevel currentLevel;
@@ -30,22 +28,10 @@ class Program : Raylib.RaylibApp
 	protected override void Init()
 	{
 		let bufferSize = 10 * 1024 * 1024;
-		buffer = Internal.Malloc(bufferSize);
+		ldtkRenderer = new LDtkRenderer(bufferSize);
 
-		let ldtkContext = LDtkContext.UseWindows(buffer, bufferSize);
-		ldtkWorld = LDtk.Parse("assets/sample.ldtk", ldtkContext, .LayerReverseOrder).GetValueOrDefault();
-
-		for (let i < ldtkWorld.levels.Length)
-		{
-		    let texturePath = scope $"assets/{ldtkWorld.levels[i].bgPath}\0";
-		    levelBgTextures[i] = LoadTexture(texturePath);
-		}
-
-		for (let i < ldtkWorld.tilesets.Length)
-		{
-		    let texturePath = scope $"assets/{ldtkWorld.tilesets[i].path}\0";
-		    tilesetTextures[i] = LoadTexture(texturePath);
-		}
+		ldtkRenderer.Load("assets/sample.ldtk").IgnoreError();
+		ldtkWorld = ldtkRenderer.world;
 
 		worldBgTexture = LoadTexture("assets/N2D - SpaceWallpaper1280x448.png");
 		SetWindowSize(worldBgTexture.width, worldBgTexture.height);
@@ -57,7 +43,7 @@ class Program : Raylib.RaylibApp
 
 	protected override void Close()
 	{
-		Internal.Free(buffer);
+		DeleteAndNullify!(ldtkRenderer);
 	}
 
 	protected override void Update(float dt)
@@ -100,101 +86,16 @@ class Program : Raylib.RaylibApp
 		if (currentLevelIndex > -1 && currentLevelIndex < ldtkWorld.levels.Length)
 		{
 			// Draw one level
-			DrawLevel(currentLevelIndex, ref currentLevel);
+			ldtkRenderer.DrawLevel(currentLevelIndex);
 		}
 		else
 		{
-			// Draw the whole world
-			//DrawTexture(worldBgTexture, 0, 0, .WHITE);
-
-			for (let i < ldtkWorld.levels.Length)
-			{
-				let level = ref ldtkWorld.levels[i];
-
-				DrawTexturePro(
-					levelBgTextures[i], 
-					.(level.bgCropX, level.bgCropY, level.bgCropWidth, level.bgCropHeight),
-					.(level.worldX + level.bgPosX, level.worldY + level.bgPosY, level.bgScaleX * level.bgCropWidth, level.bgScaleY * level.bgCropHeight),
-					.(level.bgPivotX, level.bgPivotY),
-					0.0f,
-					.WHITE
-				);
-			}
-
-			for (let i < ldtkWorld.levels.Length)
-			{
-				DrawLevel(i, ref ldtkWorld.levels[i], true);
-			}
+			ldtkRenderer.DrawWorld(true);
 		}
 
 		// Draw tips
 
 		DrawText("Left to previous level", 5, 5, 16, .WHITE);
 		DrawText("Right to next level", 5, 25, 16, .WHITE);
-	}
-
-	private void DrawLevel(int levelIndex, ref LDtkLevel level, bool useWorldPos = false)
-	{
-		if (useWorldPos)
-		{
-			/*
-			DrawTexturePro(
-				levelBgTextures[levelIndex], 
-				.(level.bgCropX, level.bgCropY, level.bgCropWidth, level.bgCropHeight),
-				.(level.worldX + level.bgPosX, level.worldY + level.bgPosY, level.bgScaleX * level.bgCropWidth, level.bgScaleY * level.bgCropHeight),
-				.(level.bgPivotX, level.bgPivotY),
-				0.0f,
-				.WHITE
-			);
-			*/
-		}
-		else
-		{
-			DrawTexturePro(
-				levelBgTextures[levelIndex], 
-				.(level.bgCropX, level.bgCropY, level.bgCropWidth, level.bgCropHeight),
-				.(level.bgPosX, level.bgPosY, level.bgScaleX * level.bgCropWidth, level.bgScaleY * level.bgCropHeight),
-				.(level.bgPivotX, level.bgPivotY),
-				0.0f,
-				.WHITE
-			);
-		}
-		
-
-		for (let layer in ref level.layers)
-		{
-			LDtkTileset tileset = layer.tileset;
-			Texture tilesetTexture = tilesetTextures[tileset.index];
-
-			for (let tile in layer.tiles)
-			{
-			    let scaleX = tile.flipX ? -1.0f : 1.0f;
-			    let scaleY = tile.flipY ? -1.0f : 1.0f;
-
-				if (useWorldPos)
-				{
-					DrawTextureRec(
-						tilesetTexture,
-						.(tile.textureX, tile.textureY, tileset.tileSize * scaleX, tileset.tileSize * scaleY),
-						.(tile.worldX, tile.worldY),
-						.WHITE
-					);
-				}
-			    else
-				{
-					DrawTextureRec(
-						tilesetTexture,
-						.(tile.textureX, tile.textureY, tileset.tileSize * scaleX, tileset.tileSize * scaleY),
-						.(tile.x, tile.y),
-						.WHITE
-					);
-				}
-			}
-
-			for (let entity in layer.entities)
-			{
-
-			}
-		}
 	}
 }

@@ -328,6 +328,8 @@ struct LDtkEntityDef
 [CRepr]
 struct LDtkWorld
 {
+	public int32				usedMemory;
+
     public LDtkWorldLayout 		layout;
     public LDtkColor       		backgroundColor;
 
@@ -482,7 +484,9 @@ public static class LDtk
 		uint8*        lowerMarker;
 		uint8*        upperMarker;
 
-		public int remainSize => (.)(upperMarker - lowerMarker);
+		public int32 usedMemory => (.)(int)(void*)lowerMarker;
+		public int32 remainSize => (.)(upperMarker - lowerMarker);
+
 		public bool CanAlloc(int size) => remainSize >= size;
 
 		public this(void* buffer, int32 bufferSize)
@@ -588,12 +592,11 @@ public static class LDtk
 		{
 			return .Err(readResult);
 		}
-		content[contentLength] = 0;
-		let jsonContent = StringView(content, contentLength);
-		
+
 		var allocator = Allocator(context.buffer, context.bufferSize);
 
 		let json = new JsonTree(); defer delete json;
+		let jsonContent = StringView(content, contentLength);
 		if (Json.ReadJson(jsonContent, json) case .Err(let error))
 		{
 			return .Err(LDtkError(.ParseJsonFailed, error.ToString(..new:allocator String())));
@@ -641,6 +644,7 @@ public static class LDtk
 				    return .Err(readDefsError);
 				}
 
+				world.usedMemory = allocator.usedMemory;
 				return .Ok(world);
 			}
 			else

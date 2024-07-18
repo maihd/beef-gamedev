@@ -1,5 +1,5 @@
 /*
-Beef GameFX Tween - v1.0 - https://github.com/maihd/beef-gamedev
+Beef GameFX Tween - v1.1 - https://github.com/maihd/beef-gamedev
 
 LICENSE
 
@@ -7,6 +7,7 @@ LICENSE
 
 RECENT REVISION HISTORY:
 
+	1.1 (2024-07-18) tweening for sub fields (i.e: TweenTo(entity, (position: Vector2 { x = 0.0f, y = 0.0f }, 1.0f, => EaseIn))
     1.0 (2024-06-28) first release
 
 ============================    Contributors    =========================
@@ -64,13 +65,47 @@ public struct Tweener<T, V, TEaseFunc> : this(T target, V startValue, V endValue
 		for (let fieldV in typeV.GetFields())
 		{
 			let fieldName = fieldV.Name;
-			code.Append(scope $"	target.{fieldName} = easeFunc(startValue.{fieldName}, endValue.{fieldName}, time);\n");
+			let fieldType = fieldV.FieldType;
+			if (fieldType == typeof(float))
+			{
+				code.Append(scope $"	target.{fieldName} = easeFunc(startValue.{fieldName}, endValue.{fieldName}, time);\n");
+			}
+			else if (fieldType.IsStruct || fieldType.IsObject)
+			{
+				GenTweenRoutineSubFields(code, fieldName, fieldV);
+			}
+			else
+			{
+				Runtime.FatalError(scope $"Non-easing able field {fieldName} with typeof {fieldType.GetFullName(..scope .())}");
+			}
 		}
 
 		code.Append("};");
 		Compiler.EmitTypeBody(typeof(Self), code);
 	}
 
+	[Comptime]
+	private static void GenTweenRoutineSubFields(String code, StringView parentFieldAccess, FieldInfo field)
+	{
+		for (let fieldV in field.FieldType.GetFields())
+		{
+			let fieldName = fieldV.Name;
+			let fieldType = fieldV.FieldType;
+			if (fieldType == typeof(float))
+			{
+				code.Append(scope $"	target.{parentFieldAccess}.{fieldName} = easeFunc(startValue.{parentFieldAccess}.{fieldName}, endValue.{parentFieldAccess}.{fieldName}, time);\n");
+			}
+			else if (fieldType.IsStruct || fieldType.IsObject)
+			{
+				GenTweenRoutineSubFields(code, scope $"{parentFieldAccess}.{fieldName}", fieldV);
+			}
+			else
+			{
+				Runtime.FatalError(scope $"Non-easing able field {fieldName} with typeof {fieldType.GetFullName(..scope .())}");
+			}
+		}
+	}
+	
     [Comptime, OnCompile(.TypeDone)]
     private static void CheckTargetType()
     {

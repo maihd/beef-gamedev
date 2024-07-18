@@ -45,5 +45,9 @@ static
 
 		tweener.Update(0.5f);
 		Test.Assert(entity.x == 2.5f && entity.y == 2.5f);
+
+		var tweenerSubFields = TweenTo(entity, (position: Vector2 { x = 0.0f, y = 0.0f }), 1.0f, scope => DefEaseFunc);
+		tweenerSubFields.Update(1.0f);
+		Test.Assert(entity.x == 0.0f && entity.y == 0.0f);
 	}
 }

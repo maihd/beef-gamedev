@@ -17,7 +17,7 @@ class TimerTweenTests
 
         Entity entity = scope Entity() { x = 0.0f, y = 0.0f };
 
-		timer.TweenTo(entity, (x: 10.0f), 1.0f, new:timer => DefEaseFunc);
+		timer.TweenTo(entity, (x: 10.0f), 1.0f, scope => DefEaseFunc);
         //timer.TweenTo(entity, (x: 10.0f), 1.0f, => DefEaseFunc);
         timer.Update(0.0f);
         timer.Update(1.0f);

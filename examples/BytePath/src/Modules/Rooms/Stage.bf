@@ -1,6 +1,10 @@
-namespace BytePath.Modules;
+namespace BytePath.Rooms;
 
-class Stage
+using BytePath.GameObjects;
+
+public class Stage : Room
 {
+	private Player player = new Player() ~ delete _;
+
 
 }

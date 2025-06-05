@@ -87,5 +87,9 @@ Because Beef have C# syntax with C++ semantics, so game tutorials/books from C++
 - XNA/FNA/MonoGame tutorials: MonoGame is C#, easy to apply Beef (Mai NeonShooter is based from [this](https://code.tutsplus.com/make-a-neon-vector-shooter-in-xna-basic-gameplay--gamedev-9859t)).
 
 
+## Additional information
+- Beef Version: v0.43.6 Nightly (>= 03/06/2025 DD/MM/YYYY)
+
+
 ## Source code license
-MIT License. Copyright (c) 2024 MaiHD. Detais in [LICENSE](/LICENSE).
+MIT License. Copyright (c) 2024 - 2025 MaiHD. Detais in [LICENSE](/LICENSE).

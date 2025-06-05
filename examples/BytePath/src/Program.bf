@@ -45,16 +45,22 @@ class Program : Raylib.RaylibApp
 			Raylib.TraceLog(.LOG_WARNING, "GC Report will be printed in Beef IDE");
 			GC.Report();
 		});
+		
 
 		tmpPlayer = new Player();
 		tmpPlayer.y = Raylib.GetScreenHeight() * 0.5f;
 		gInput.Bind(.KEY_SPACE, new () => {
 			gTimer.TweenTo(tmpPlayer, (x: Raylib.GetScreenWidth() * 0.5f), 2.0f, new:gTimer (s, e, t) => Raylib.Easings.EaseBackInOut(t, s, e, 1.0f));
 		});
+
+		RoomManager.Init();
+		RoomManager.SetRoom(new BytePath.Rooms.Stage());
 	}
 
 	protected override void Close()
 	{
+		RoomManager.Deinit();
+
 		DeleteAndNullify!(tmpPlayer);
 
 		DeleteAndNullify!(gInput);
@@ -66,10 +72,11 @@ class Program : Raylib.RaylibApp
 		Raylib.ClearBackground(.BLACK);
 
 		tmpPlayer.Draw();
+		RoomManager.Draw();
 
 #if DEBUG
 		Raylib.DrawText(scope $"Mouse {gInput.MouseX}, {gInput.MouseY}", 10, 10, 12, .WHITE);
-#endif		
+#endif
 	}
 
 	protected override void Update(float dt)
@@ -81,5 +88,7 @@ class Program : Raylib.RaylibApp
 		{
 			Raylib.TraceLog(.LOG_INFO, "Acted left");
 		}
+
+		RoomManager.Update(dt);
 	}
 }

@@ -1,5 +1,5 @@
 /*
-Beef GameFX LDtk Raylib Rendering - v0.1 - https://github.com/maihd/beef-gamedev
+Beef GameFX LDtk Raylib Rendering - v0.2 - https://github.com/maihd/beef-gamedev
 
 NOTES
 
@@ -11,6 +11,7 @@ LICENSE
 
 RECENT REVISION HISTORY:
 
+    0.2 (2025-06-07) LDtkColor auto casting to Raylib.Color
     0.1 (2024-07-01) designing the API
 
 ============================    Contributors    =========================
@@ -55,6 +56,22 @@ extension LDtkContext
 		return .(.None, "");
 	}
 	*/
+}
+
+extension LDtkColor
+{
+    public this(Raylib.Color c)
+    {
+        r = c.r;
+        g = c.g;
+        b = c.b;
+        a = c.a;
+    }
+
+    public static operator Raylib.Color(LDtkColor c)
+    {
+        return .(c.r, c.g, c.b, c.a);
+    }
 }
 
 class LDtkRenderer

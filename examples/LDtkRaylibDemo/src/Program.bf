@@ -81,7 +81,7 @@ class Program : Raylib.RaylibApp
 
 	protected override void Draw()
 	{
-		ClearBackground(.(ldtkWorld.backgroundColor.r, ldtkWorld.backgroundColor.g, ldtkWorld.backgroundColor.b, ldtkWorld.backgroundColor.a));
+		ClearBackground(ldtkWorld.backgroundColor);
 
 		if (currentLevelIndex > -1 && currentLevelIndex < ldtkWorld.levels.Length)
 		{

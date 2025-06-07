@@ -4,6 +4,7 @@ Beef GameFX LDtk parser - v0.2 - https://github.com/maihd/beef-gamedev
 NOTES
 
     This library use custom allocations. Global allocations for parsing.
+    Require EinScott's JSON library.
 
 LICENSE
 

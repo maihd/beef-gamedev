@@ -35,7 +35,7 @@ extension LDtkContext
 		};
 	}
 
-	/*
+	/* Crashing
 	public static LDtkError RaylibReadFile(StringView filePath, void* buffer, int32* bufferSize)
 	{
 		int32 readBytes = 0;

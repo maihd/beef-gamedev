@@ -50,7 +50,7 @@ class Program : Raylib.RaylibApp
 		tmpPlayer = new Player();
 		tmpPlayer.y = Raylib.GetScreenHeight() * 0.5f;
 		gInput.Bind(.KEY_SPACE, new () => {
-			gTimer.TweenTo(tmpPlayer, (x: Raylib.GetScreenWidth() * 0.5f), 2.0f, new:gTimer (s, e, t) => Raylib.Easings.EaseBackInOut(t, s, e, 1.0f));
+			gTimer.TweenTo(tmpPlayer, (x: Raylib.GetScreenWidth() * 0.5f), 2.0f, new:gTimer (s, e, t) => Raylib.EaseBackInOut(t, s, e, 1.0f));
 		});
 
 		RoomManager.Init();

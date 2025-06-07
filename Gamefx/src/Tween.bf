@@ -1,5 +1,5 @@
 /*
-Beef GameFX Tween - v1.1 - https://github.com/maihd/beef-gamedev
+Beef GameFX Tween - v1.2 - https://github.com/maihd/beef-gamedev
 
 LICENSE
 
@@ -7,6 +7,7 @@ LICENSE
 
 RECENT REVISION HISTORY:
 
+    1.2 (2025-06-07) fix typos in GenEndValueDecl (envValue -> endValue)
 	1.1 (2024-07-18) tweening for sub fields (i.e: TweenTo(entity, (position: Vector2 { x = 0.0f, y = 0.0f }, 1.0f, => EaseIn))
     1.0 (2024-06-28) first release
 
@@ -260,7 +261,7 @@ static
 		for (let fieldV in typeV.GetFields())
 		{
 			let fieldName = fieldV.Name;
-			code.Append(scope $"envValue.{fieldName} = target.{fieldName} + value.{fieldName};\n");
+			code.Append(scope $"endValue.{fieldName} = target.{fieldName} + value.{fieldName};\n");
 		}
 		code.Append("\n");
 		Compiler.MixinRoot(code);
